@@ -11,7 +11,12 @@ using namespace std;
 string NT; //NextToken
 
 void scan(ifstream &file) {
-    if (!getline(file, NT)) {
+    char x;
+    NT.clear();
+    while (file.get(x) && x != ' ') {
+        NT += x;
+    }
+    if (!file.good()) {
         cout << "\n\nEOF reached!\n\n";
         exit(1);
     }
@@ -68,7 +73,6 @@ int main(int argc, char *argv[]) {
                 cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
                 string nextToken;
                 while (1) {
-                    cout << " " << NT;
                     scan(the_file);
                     cout << " " << NT;
                 }
