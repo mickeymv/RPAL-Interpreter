@@ -201,10 +201,20 @@ void scan(ifstream &file) {
     } else if (isPunctuation(peek)) {
         readPunctuationChar(file);
     } else {
+        file.get(); //TODO: Is this required?
+        checkIfEOF(file);
         cout << "\n\nERROR! Found unexpected char, '" << peek << "' happened! DIE!\n\n";
         throw std::exception();
     }
 
+}
+
+void read(ifstream &file, string token) {
+    if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
+        cout << "\n\nError! Expected " << token << " but found " << NT << "\n\n";
+        throw std::exception();
+    }
+    scan(file);
 }
 
 int main(int argc, char *argv[]) {
