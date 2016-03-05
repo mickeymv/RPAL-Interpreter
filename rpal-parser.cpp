@@ -9,17 +9,122 @@
 using namespace std;
 
 string NT; //NextToken
+const string IDENTIFIER_TOKEN = "IDENTIFIER";
+const string INTEGER_TOKEN = "INTEGER";
+const string STRING_TOKEN = "STRING";
+const string OPERATOR_TOKEN = "OPERATOR";
+const string UNDEFINED_TOKEN = "UNDEFINED";
 
-void scan(ifstream &file) {
-    char x;
-    NT.clear();
-    while (file.get(x) && x != ' ') {
-        NT += x;
-    }
+const char operatorArray[] = {'+', '-', '*', '<', '>', '&', '.', '@', '/', ':', '=', '~', '|', '$', '!', '#', '!', '^',
+                              '_', '[', ']', '{', '}', '"', '`', '?', '\0'};
+
+const char stringAllowedCharArray[] = {'(', ')', ';', ',', ' ', '\0'};
+
+string nextTokenType = UNDEFINED_TOKEN;
+
+void checkIfEOF(ifstream &file) {
     if (!file.good()) {
         cout << "\n\nEOF reached!\n\n";
         exit(1);
     }
+}
+
+
+void readIdentifierToken(ifstream &file) {
+    checkIfEOF(file);
+    nextTokenType = IDENTIFIER_TOKEN;
+    char x; //get the next character in stream in this
+    char peek = file.peek(); //peek and store the next character in stream in this
+    while (isalpha(peek) || isnumber(peek) || peek == '_') {
+        file.get(x);
+        NT += x;
+        peek = file.peek();
+    }
+}
+
+void readIntegerToken(ifstream &file) {
+    checkIfEOF(file);
+    nextTokenType = INTEGER_TOKEN;
+    char x; //get the next character in stream in this
+    char peek = file.peek(); //peek and store the next character in stream in this
+    while (isnumber(peek)) {
+        file.get(x);
+        NT += x;
+        peek = file.peek();
+    }
+}
+
+bool isOperator(char c) {
+    if (std::find(std::begin(operatorArray), std::end(operatorArray), c) != std::end(operatorArray))
+        return true;
+    else
+        return false;
+}
+
+bool isStringAllowedChar(char c) {
+    if ((std::find(std::begin(stringAllowedCharArray), std::end(stringAllowedCharArray), c) !=
+         std::end(stringAllowedCharArray)) || isnumber(c) || isalpha(c) || isOperator(c))
+        return true;
+    else
+        return false;
+}
+
+void readStringToken(ifstream &file) {
+    checkIfEOF(file);
+    nextTokenType = STRING_TOKEN;
+    char x; //get the next character in stream in this
+    char peek = file.peek(); //peek and store the next character in stream in this
+
+    if (peek != '\'') { //check for the single quote to start the string
+        file.get(x);
+        NT += x;
+        peek = file.peek();
+    } else {
+        cout << "\n\nERROR! Expected start of string, " << peek << " happened! DIE!\n\n";
+        throw std::exception();
+    }
+    while (isStringAllowedChar(peek)) {
+        file.get(x);
+        NT += x;
+        peek = file.peek();
+    }
+    if (peek != '\'') { //check for the single quote to close the string
+        file.get(x);
+        NT += x;
+    } else {
+        cout << "\n\nERROR! Expected close of string, " << peek << " happened! DIE!\n\n";
+        throw std::exception();
+    }
+}
+
+void readOperatorToken(ifstream &file) {
+    checkIfEOF(file);
+    nextTokenType = OPERATOR_TOKEN;
+    char x; //get the next character in stream in this
+    char peek = file.peek(); //peek and store the next character in stream in this
+    while (isOperator(peek)) {
+        file.get(x);
+        NT += x;
+        peek = file.peek();
+    }
+}
+
+void scan(ifstream &file) {
+    checkIfEOF(file);
+    nextTokenType = UNDEFINED_TOKEN;
+
+    char peek = file.peek(); //peek and store the next character in stream in this
+
+    NT.clear(); //clear NT to get the next token in file
+
+    if (isalpha(peek)) {
+        readIdentifierToken(file);
+    } else if (isnumber(peek)) {
+        readIntegerToken(file);
+    } else if (isOperator(peek)) {
+        readOperatorToken(file);
+    }
+
 }
 
 int main(int argc, char *argv[]) {
@@ -95,7 +200,7 @@ int main(int argc, char *argv[]) {
 }
 
 void read(ifstream &file, string token) {
-    if (token.compare(NT) != 0) {
+    if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected " << token << " but found " << NT << "\n\n";
         throw std::exception();
     }
