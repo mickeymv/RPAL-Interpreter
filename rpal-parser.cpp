@@ -8,6 +8,15 @@
 
 using namespace std;
 
+string NT; //NextToken
+
+void scan(ifstream &file) {
+    if (!getline(file, NT)) {
+        cout << "\n\nEOF reached!\n\n";
+        exit(1);
+    }
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc == 3) {
@@ -57,6 +66,12 @@ int main(int argc, char *argv[]) {
             else {
                 //Call parser
                 cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
+                string nextToken;
+                while (1) {
+                    cout << " " << NT;
+                    scan(the_file);
+                    cout << " " << NT;
+                }
             }
         }
     }
@@ -74,3 +89,12 @@ int main(int argc, char *argv[]) {
     }
 
 }
+
+void read(ifstream &file, string token) {
+    if (token.compare(NT) != 0) {
+        cout << "\n\nError! Expected " << token << " but found " << NT << "\n\n";
+        throw std::exception();
+    }
+    scan(file);
+}
+
