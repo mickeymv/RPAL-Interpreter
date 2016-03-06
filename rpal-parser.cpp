@@ -13,7 +13,7 @@ const string IDENTIFIER_TOKEN = "IDENTIFIER";
 const string INTEGER_TOKEN = "INTEGER";
 const string STRING_TOKEN = "STRING";
 const string OPERATOR_TOKEN = "OPERATOR";
-//const string PUNCTUATION_TOKEN = "PUNCTUATION";
+const string KEYWORD_TOKEN = "KEYWORD";
 const string UNDEFINED_TOKEN = "UNDEFINED";
 
 const char operatorArray[] = {'+', '-', '*', '<', '>', '&', '.', '@', '/', ':', '=', '~', '|', '$', '!', '#', '!', '^',
@@ -49,6 +49,12 @@ void readIdentifierToken(ifstream &file) {
         file.get(x);
         NT += x;
         peek = file.peek();
+    }
+    if (NT.compare("rec") == 0 || NT.compare("where") == 0 || NT.compare("in") == 0 || NT.compare("and") == 0 ||
+        NT.compare("let") == 0 || NT.compare("fn") == 0 || NT.compare("or") == 0 || NT.compare("not") == 0 ||
+        NT.compare("gr") == 0 || NT.compare("ge") == 0 || NT.compare("ls") == 0 || NT.compare("le") == 0 ||
+        NT.compare("eq") == 0 || NT.compare("ne") == 0 || NT.compare("within") == 0) {
+        nextTokenType = KEYWORD_TOKEN;
     }
 }
 
