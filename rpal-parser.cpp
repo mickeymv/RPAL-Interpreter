@@ -234,7 +234,7 @@ void Db(ifstream &file) {
         readToken(file, ")");
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
         readToken(file, IDENTIFIER_TOKEN);
-        if (NT.compare(",")) {
+        if (NT.compare(",") == 0) {
             readToken(file, ",");
             Vl(file);
             readToken(file, "=");
