@@ -205,43 +205,45 @@ void E(ifstream &file);
 
 void D(ifstream &file);
 
+void readToken(ifstream &file, string token);
+
 void Vl(ifstream &file) {
-    read(file, IDENTIFIER_TOKEN);
+    readToken(file, IDENTIFIER_TOKEN);
     if (NT.compare(",") == 0) {
-        read(file, ",");
+        readToken(file, ",");
         Vl(file);
     }
 }
 
 void Vb(ifstream &file) {
     if (NT.compare("(") == 0) {
-        read(file, "(");
+        readToken(file, "(");
         if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
             Vl(file);
         }
-        read(file, ")");
+        readToken(file, ")");
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
-        read(file, IDENTIFIER_TOKEN);
+        readToken(file, IDENTIFIER_TOKEN);
     }
 }
 
 void Db(ifstream &file) {
     if (NT.compare("(") == 0) {
-        read(file, "(");
+        readToken(file, "(");
         D(file);
-        read(file, ")");
+        readToken(file, ")");
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
-        read(file, IDENTIFIER_TOKEN);
+        readToken(file, IDENTIFIER_TOKEN);
         if (NT.compare(",")) {
-            read(file, ",");
+            readToken(file, ",");
             Vl(file);
-            read(file, "=");
+            readToken(file, "=");
             E(file);
         } else {
             while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0) {
                 Vb(file);
             }
-            read(file, "=");
+            readToken(file, "=");
             E(file);
         }
     }
@@ -249,7 +251,7 @@ void Db(ifstream &file) {
 
 void Dr(ifstream &file) {
     if (NT.compare("rec") == 0) {
-        read(file, "rec");
+        readToken(file, "rec");
     }
     Db(file);
 }
@@ -257,7 +259,7 @@ void Dr(ifstream &file) {
 void Da(ifstream &file) {
     Dr(file);
     while (NT.compare("and") == 0) {
-        read(file, "and");
+        readToken(file, "and");
         Dr(file);
     }
 }
@@ -265,7 +267,7 @@ void Da(ifstream &file) {
 void D(ifstream &file) {
     Da(file);
     if (NT.compare("within") == 0) {
-        read(file, "within");
+        readToken(file, "within");
         D(file);
     }
 }
@@ -273,14 +275,14 @@ void D(ifstream &file) {
 void Rn(ifstream &file) {
     if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || nextTokenType.compare(INTEGER_TOKEN) == 0 ||
         nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
-        read(file, nextTokenType);
+        readToken(file, nextTokenType);
     } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
                NT.compare("nil") == 0 || NT.compare("dummy") == 0) {
-        read(file, NT);
+        readToken(file, NT);
     } else if (NT.compare("(") == 0) {
-        read(file, "(");
+        readToken(file, "(");
         E(file);
-        read(file, ")");
+        readToken(file, ")");
     }
 }
 
@@ -297,8 +299,8 @@ void Ap(ifstream &file) {
     R(file);
     while (NT.compare("@") ==
            0) { //TODO: this might cause an error. How would '@' be parsed if it's a prefix to a fn name?
-        read(file, "@");
-        read(file, IDENTIFIER_TOKEN);
+        readToken(file, "@");
+        readToken(file, IDENTIFIER_TOKEN);
         R(file);
     }
 }
@@ -306,7 +308,7 @@ void Ap(ifstream &file) {
 void Af(ifstream &file) {
     Ap(file);
     if (NT.compare("**") == 0) {
-        read(file, "**");
+        readToken(file, "**");
         Af(file);
     }
 }
@@ -314,20 +316,20 @@ void Af(ifstream &file) {
 void At(ifstream &file) {
     Af(file);
     while (NT.compare("*") == 0 || NT.compare("/") == 0) {
-        read(file, NT);
+        readToken(file, NT);
         Af(file);
     }
 }
 
 void A(ifstream &file) {
     if (NT.compare("+") == 0) {
-        read(file, "+");
+        readToken(file, "+");
     } else if (NT.compare("-") == 0) {
-        read(file, "-");
+        readToken(file, "-");
     }
     At(file);
     while (NT.compare("+") == 0 || NT.compare("-") == 0) {
-        read(file, NT);
+        readToken(file, NT);
         At(file);
     }
 }
@@ -335,29 +337,29 @@ void A(ifstream &file) {
 void Bp(ifstream &file) {
     A(file);
     if (NT.compare("gr") == 0 || NT.compare(">") == 0) {
-        read(file, NT);
+        readToken(file, NT);
         A(file);
     } else if (NT.compare("ge") == 0 || NT.compare(">=") == 0) {
-        read(file, NT);
+        readToken(file, NT);
         A(file);
     } else if (NT.compare("ls") == 0 || NT.compare("<") == 0) {
-        read(file, NT);
+        readToken(file, NT);
         A(file);
     } else if (NT.compare("le") == 0 || NT.compare("<=") == 0) {
-        read(file, NT);
+        readToken(file, NT);
         A(file);
     } else if (NT.compare("eq") == 0) {
-        read(file, "eq");
+        readToken(file, "eq");
         A(file);
     } else if (NT.compare("ne") == 0) {
-        read(file, "ne");
+        readToken(file, "ne");
         A(file);
     }
 }
 
 void Bs(ifstream &file) {
     if (NT.compare("not") == 0) {
-        read(file, "not");
+        readToken(file, "not");
     }
     Bp(file);
 }
@@ -365,7 +367,7 @@ void Bs(ifstream &file) {
 void Bt(ifstream &file) {
     Bs(file);
     while (NT.compare("&") == 0) {
-        read(file, "&");
+        readToken(file, "&");
         Bs(file);
     }
 }
@@ -373,7 +375,7 @@ void Bt(ifstream &file) {
 void B(ifstream &file) {
     Bt(file);
     while (NT.compare("or") == 0) {
-        read(file, "or");
+        readToken(file, "or");
         Bt(file);
     }
 }
@@ -382,9 +384,9 @@ void Tc(ifstream &file) {
     B(file);
     if (NT.compare("->") ==
         0) {  //TODO: possible place of an error when '->' is expected and evaluated but it was actually a '-'? Is that possible?
-        read(file, "->");
+        readToken(file, "->");
         Tc(file);
-        read(file, "|");
+        readToken(file, "|");
         Tc(file);
     }
 }
@@ -392,7 +394,7 @@ void Tc(ifstream &file) {
 void Ta(ifstream &file) {
     Tc(file);
     while (NT.compare("aug") == 0) { //left recursion
-        read(file, "aug");
+        readToken(file, "aug");
         Tc(file);
     }
 }
@@ -400,7 +402,7 @@ void Ta(ifstream &file) {
 void T(ifstream &file) {
     Ta(file);
     while (NT.compare(",") == 0) { //combo of left recursion AND common prefix
-        read(file, ",");
+        readToken(file, ",");
         Ta(file);
     }
 }
@@ -408,27 +410,27 @@ void T(ifstream &file) {
 void Ew(ifstream &file) {
     T(file);
     if (NT.compare("where") == 0) { //common prefix
-        read(file, "where");
+        readToken(file, "where");
         Dr(file);
     }
 }
 
 void E(ifstream &file) {
+    int N = 0;
     switch (hashit(NT)) {
         case elet :
-            read(file, "let");
+            readToken(file, "let");
             D(file);
-            read(file, "in");
+            readToken(file, "in");
             E(file);
             break;
         case efn :
-            read(file, "fn");
-            int N = 0;
+            readToken(file, "fn");
             do {
                 Vb(file);
                 N++;
             } while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0);
-            read(file, ".");
+            readToken(file, ".");
             E(file);
             break;
         default:
@@ -476,9 +478,9 @@ void scan(ifstream &file) {
 
 }
 
-void read(ifstream &file, string token) {
+void readToken(ifstream &file, string token) {
     if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
-        cout << "\n\nError! Expected " << token << " but found " << NT << "\n\n";
+        cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
         throw std::exception();
     }
     scan(file);
