@@ -412,8 +412,8 @@ void E(ifstream &file) {
         D(file);
         readToken(file, "in");
         E(file);
-    } else if (NT.compare("fn") == 0 || nextTokenType.compare(IDENTIFIER_TOKEN) ==
-                                        0) { //TODO: It should be NT.compare(fn) alone ... How to do this properly? How to resolve "fn" with a custom user defined function name?
+    } else if (NT.compare("fn") == 0) { //TODO:  || nextTokenType.compare(IDENTIFIER_TOKEN) == 0 // Is this required?
+        //TODO: It should be NT.compare(fn) alone ... How to do this properly? How to resolve "fn" with a custom user defined function name?
         readToken(file, "fn");
         do {
             Vb(file);
@@ -429,8 +429,8 @@ void E(ifstream &file) {
 
 void scan(ifstream &file) {
     if (checkIfEOF(file)) {
-        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
-        exit(0);
+        cout << "\n\nEOF reached !\n\n";
+        return;
     }
     nextTokenType = UNDEFINED_TOKEN;
 
@@ -455,22 +455,24 @@ void scan(ifstream &file) {
         scan(file); //call scan to get the next token
     } else if (isPunctuation(peek)) {
         readPunctuationChar(file);
-    } else {
-        file.get(); //TODO: Is this required?
-        if (checkIfEOF(file)) {
-            cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
-            exit(0);
-        }
-        cout << "\n\nERROR! Found unexpected char, '" << peek << "' happened! DIE!\n\n";
-        throw std::exception();
     }
+//    } else {
+//        file.get(); //TODO: Is this required?
+//        if (checkIfEOF(file)) {
+//            cout << "\n\nEOF reached !!\n\n";
+//            exit(0);
+//        }
+//        cout << "\n\nERROR! Found unexpected char, '" << peek << "' happened! DIE!\n\n";
+//        throw std::exception();
+//    }
 
 }
 
 void readToken(ifstream &file, string token) {
-    if (token.compare("fn") == 0 && nextTokenType.compare(IDENTIFIER_TOKEN) ==
-                                    0); //TODO: because the function name could be any identifier? Or is it?
-    else if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
+    //if (token.compare("fn") == 0 && nextTokenType.compare(IDENTIFIER_TOKEN) ==  //TODO: Is this required?
+    //                                0); //TODO: because the function name could be any identifier? Or is it?
+    //else
+    if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
         throw std::exception();
     }
@@ -532,6 +534,9 @@ int main(int argc, char *argv[]) {
                 if (checkIfEOF(the_file)) {
                     cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
                     exit(1);
+                } else {
+                    cout << "\n\nSomething went wrong! EOF not reached but parsing complete! Will exit now!!\n\n";
+                    exit(0);
                 }
             }
         }
