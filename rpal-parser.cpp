@@ -29,16 +29,6 @@ const char punctuationArray[] = {'(', ')', ';', ',', '\0'};
 
 string nextTokenType = UNDEFINED_TOKEN;
 
-enum string_code {
-    elet,
-    efn,
-};
-
-string_code hashit(string const &inString) {
-    if (inString == "let") return elet;
-    if (inString == "fn") return efn;
-}
-
 bool checkIfEOF(ifstream &file) {
     if (!file.good() || file.peek() == EOF) {
         return true;
@@ -417,26 +407,24 @@ void Ew(ifstream &file) {
 
 void E(ifstream &file) {
     int N = 0;
-    switch (hashit(NT)) {
-        case elet :
-            readToken(file, "let");
-            D(file);
-            readToken(file, "in");
-            E(file);
-            break;
-        case efn :
-            readToken(file, "fn");
-            do {
-                Vb(file);
-                N++;
-            } while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0);
-            readToken(file, ".");
-            E(file);
-            break;
-        default:
-            Ew(file);
-            break;
+    if (NT.compare("let") == 0) {
+        readToken(file, "let");
+        D(file);
+        readToken(file, "in");
+        E(file);
+    } else if (NT.compare("fn") == 0 || nextTokenType.compare(IDENTIFIER_TOKEN) ==
+                                        0) { //TODO: It should be NT.compare(fn) alone ... How to do this properly? How to resolve "fn" with a custom user defined function name?
+        readToken(file, "fn");
+        do {
+            Vb(file);
+            N++;
+        } while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0);
+        readToken(file, ".");
+        E(file);
+    } else {
+        Ew(file);
     }
+
 }
 
 void scan(ifstream &file) {
@@ -480,7 +468,8 @@ void scan(ifstream &file) {
 }
 
 void readToken(ifstream &file, string token) {
-    if (token.compare("fn") == 0 && nextTokenType.compare(IDENTIFIER_TOKEN) == 0); //TODO: because the function name could be any identifier? Or is it?
+    if (token.compare("fn") == 0 && nextTokenType.compare(IDENTIFIER_TOKEN) ==
+                                    0); //TODO: because the function name could be any identifier? Or is it?
     else if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
         throw std::exception();
