@@ -178,6 +178,8 @@ void readOperatorToken(ifstream &file) {
     }
 }
 
+void scan(ifstream &file);
+
 void resolveIfCommentOrOperator(ifstream &file) {
     char x;
     file.get(x); //Move past the first '/'
@@ -190,6 +192,7 @@ void resolveIfCommentOrOperator(ifstream &file) {
             peek = file.peek();
         }
         file.get(x); //Move past the EOL
+        scan(file); //call scan to get the next token
     } else {
         // this means it's an operator sequence
         NT += '/'; //Add the first '/' that we moved past to the operator token
