@@ -29,16 +29,29 @@ const char punctuationArray[] = {'(', ')', ';', ',', '\0'};
 
 string nextTokenType = UNDEFINED_TOKEN;
 
-void checkIfEOF(ifstream &file) {
-    if (!file.good()) {
-        cout << "\n\nEOF reached!\n\n";
-        exit(1);
+enum string_code {
+    elet,
+    efn,
+};
+
+string_code hashit(string const &inString) {
+    if (inString == "let") return elet;
+    if (inString == "fn") return efn;
+}
+
+bool checkIfEOF(ifstream &file) {
+    if (!file.good() || file.peek() == EOF) {
+        return true;
     }
+    return false;
 }
 
 
 void readIdentifierToken(ifstream &file) {
-    checkIfEOF(file);
+    if (checkIfEOF(file)) {
+        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+        exit(0);
+    }
     nextTokenType = IDENTIFIER_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
@@ -50,7 +63,10 @@ void readIdentifierToken(ifstream &file) {
 }
 
 void readIntegerToken(ifstream &file) {
-    checkIfEOF(file);
+    if (checkIfEOF(file)) {
+        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+        exit(0);
+    }
     nextTokenType = INTEGER_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
@@ -76,7 +92,10 @@ bool isPunctuation(char c) {
 }
 
 void readPunctuationChar(ifstream &file) {
-    checkIfEOF(file);
+    if (checkIfEOF(file)) {
+        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+        exit(0);
+    }
     //nextTokenType = PUNCTUATION_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
@@ -118,7 +137,10 @@ bool isEscapeCharInString(ifstream &file, char &peek) {
 }
 
 void readStringToken(ifstream &file) {
-    checkIfEOF(file);
+    if (checkIfEOF(file)) {
+        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+        exit(0);
+    }
     nextTokenType = STRING_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
@@ -146,7 +168,10 @@ void readStringToken(ifstream &file) {
 }
 
 void readOperatorToken(ifstream &file) {
-    checkIfEOF(file);
+    if (checkIfEOF(file)) {
+        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+        exit(0);
+    }
     nextTokenType = OPERATOR_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
@@ -176,8 +201,247 @@ void resolveIfCommentOrOperator(ifstream &file) {
     }
 }
 
+void E(ifstream &file);
+
+void D(ifstream &file);
+
+void Vl(ifstream &file) {
+    read(file, IDENTIFIER_TOKEN);
+    if (NT.compare(",") == 0) {
+        read(file, ",");
+        Vl(file);
+    }
+}
+
+void Vb(ifstream &file) {
+    if (NT.compare("(") == 0) {
+        read(file, "(");
+        if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+            Vl(file);
+        }
+        read(file, ")");
+    } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        read(file, IDENTIFIER_TOKEN);
+    }
+}
+
+void Db(ifstream &file) {
+    if (NT.compare("(") == 0) {
+        read(file, "(");
+        D(file);
+        read(file, ")");
+    } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        read(file, IDENTIFIER_TOKEN);
+        if (NT.compare(",")) {
+            read(file, ",");
+            Vl(file);
+            read(file, "=");
+            E(file);
+        } else {
+            while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0) {
+                Vb(file);
+            }
+            read(file, "=");
+            E(file);
+        }
+    }
+}
+
+void Dr(ifstream &file) {
+    if (NT.compare("rec") == 0) {
+        read(file, "rec");
+    }
+    Db(file);
+}
+
+void Da(ifstream &file) {
+    Dr(file);
+    while (NT.compare("and") == 0) {
+        read(file, "and");
+        Dr(file);
+    }
+}
+
+void D(ifstream &file) {
+    Da(file);
+    if (NT.compare("within") == 0) {
+        read(file, "within");
+        D(file);
+    }
+}
+
+void Rn(ifstream &file) {
+    if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || nextTokenType.compare(INTEGER_TOKEN) == 0 ||
+        nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        read(file, nextTokenType);
+    } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
+               NT.compare("nil") == 0 || NT.compare("dummy") == 0) {
+        read(file, NT);
+    } else if (NT.compare("(") == 0) {
+        read(file, "(");
+        E(file);
+        read(file, ")");
+    }
+}
+
+void R(ifstream &file) {
+    Rn(file);
+    while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || nextTokenType.compare(INTEGER_TOKEN) == 0 ||
+           nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("true") == 0 || NT.compare("false") == 0 ||
+           NT.compare("nil") == 0 || NT.compare("dummy") == 0 || NT.compare("(") == 0) {
+        Rn(file);
+    }
+}
+
+void Ap(ifstream &file) {
+    R(file);
+    while (NT.compare("@") ==
+           0) { //TODO: this might cause an error. How would '@' be parsed if it's a prefix to a fn name?
+        read(file, "@");
+        read(file, IDENTIFIER_TOKEN);
+        R(file);
+    }
+}
+
+void Af(ifstream &file) {
+    Ap(file);
+    if (NT.compare("**") == 0) {
+        read(file, "**");
+        Af(file);
+    }
+}
+
+void At(ifstream &file) {
+    Af(file);
+    while (NT.compare("*") == 0 || NT.compare("/") == 0) {
+        read(file, NT);
+        Af(file);
+    }
+}
+
+void A(ifstream &file) {
+    if (NT.compare("+") == 0) {
+        read(file, "+");
+    } else if (NT.compare("-") == 0) {
+        read(file, "-");
+    }
+    At(file);
+    while (NT.compare("+") == 0 || NT.compare("-") == 0) {
+        read(file, NT);
+        At(file);
+    }
+}
+
+void Bp(ifstream &file) {
+    A(file);
+    if (NT.compare("gr") == 0 || NT.compare(">") == 0) {
+        read(file, NT);
+        A(file);
+    } else if (NT.compare("ge") == 0 || NT.compare(">=") == 0) {
+        read(file, NT);
+        A(file);
+    } else if (NT.compare("ls") == 0 || NT.compare("<") == 0) {
+        read(file, NT);
+        A(file);
+    } else if (NT.compare("le") == 0 || NT.compare("<=") == 0) {
+        read(file, NT);
+        A(file);
+    } else if (NT.compare("eq") == 0) {
+        read(file, "eq");
+        A(file);
+    } else if (NT.compare("ne") == 0) {
+        read(file, "ne");
+        A(file);
+    }
+}
+
+void Bs(ifstream &file) {
+    if (NT.compare("not") == 0) {
+        read(file, "not");
+    }
+    Bp(file);
+}
+
+void Bt(ifstream &file) {
+    Bs(file);
+    while (NT.compare("&") == 0) {
+        read(file, "&");
+        Bs(file);
+    }
+}
+
+void B(ifstream &file) {
+    Bt(file);
+    while (NT.compare("or") == 0) {
+        read(file, "or");
+        Bt(file);
+    }
+}
+
+void Tc(ifstream &file) {
+    B(file);
+    if (NT.compare("->") ==
+        0) {  //TODO: possible place of an error when '->' is expected and evaluated but it was actually a '-'? Is that possible?
+        read(file, "->");
+        Tc(file);
+        read(file, "|");
+        Tc(file);
+    }
+}
+
+void Ta(ifstream &file) {
+    Tc(file);
+    while (NT.compare("aug") == 0) { //left recursion
+        read(file, "aug");
+        Tc(file);
+    }
+}
+
+void T(ifstream &file) {
+    Ta(file);
+    while (NT.compare(",") == 0) { //combo of left recursion AND common prefix
+        read(file, ",");
+        Ta(file);
+    }
+}
+
+void Ew(ifstream &file) {
+    T(file);
+    if (NT.compare("where") == 0) { //common prefix
+        read(file, "where");
+        Dr(file);
+    }
+}
+
+void E(ifstream &file) {
+    switch (hashit(NT)) {
+        case elet :
+            read(file, "let");
+            D(file);
+            read(file, "in");
+            E(file);
+            break;
+        case efn :
+            read(file, "fn");
+            int N = 0;
+            do {
+                Vb(file);
+                N++;
+            } while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0);
+            read(file, ".");
+            E(file);
+            break;
+        default:
+            Ew(file);
+            break;
+    }
+}
+
 void scan(ifstream &file) {
-    checkIfEOF(file);
+    if (checkIfEOF(file)) {
+        cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+        exit(0);
+    }
     nextTokenType = UNDEFINED_TOKEN;
 
     char peek = file.peek(); //peek and store the next character in stream in this
@@ -202,7 +466,10 @@ void scan(ifstream &file) {
         readPunctuationChar(file);
     } else {
         file.get(); //TODO: Is this required?
-        checkIfEOF(file);
+        if (checkIfEOF(file)) {
+            cout << "\n\nEOF reached unexpectedly without complete parsing! Will die now!!\n\n";
+            exit(0);
+        }
         cout << "\n\nERROR! Found unexpected char, '" << peek << "' happened! DIE!\n\n";
         throw std::exception();
     }
@@ -266,10 +533,12 @@ int main(int argc, char *argv[]) {
             else {
                 //Call parser
                 cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
-                string nextToken;
-                while (1) {
-                    scan(the_file);
-                    cout << " " << NT;
+                scan(the_file); //Prepare the first token by placing it within 'NT'
+                E(the_file);    //Call the first non-terminal procedure to start parsing
+                //cout << " " << NT;
+                if (checkIfEOF(the_file)) {
+                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
+                    exit(1);
                 }
             }
         }
@@ -289,11 +558,4 @@ int main(int argc, char *argv[]) {
 
 }
 
-void read(ifstream &file, string token) {
-    if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
-        cout << "\n\nError! Expected " << token << " but found " << NT << "\n\n";
-        throw std::exception();
-    }
-    scan(file);
-}
 
