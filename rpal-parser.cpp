@@ -118,7 +118,7 @@ bool isEscapeCharInString(ifstream &file, char &peek) {
     //peek and store the next character in stream in this
     if (peek == '\\') {
         file.get(x);
-        //NT += x; //No need to add the escape backslash to the string token
+        NT += x; //Add the escape backslash to the string token (as per the reference implementation)
         peek = file.peek();
         if (std::find(std::begin(stringAllowedEscapeCharArray), std::end(stringAllowedEscapeCharArray), peek) !=
             std::end(stringAllowedEscapeCharArray)) {
@@ -480,7 +480,8 @@ void scan(ifstream &file) {
 }
 
 void readToken(ifstream &file, string token) {
-    if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
+    if (token.compare("fn") == 0 && nextTokenType.compare(IDENTIFIER_TOKEN) == 0); //TODO: because the function name could be any identifier? Or is it?
+    else if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
         throw std::exception();
     }
