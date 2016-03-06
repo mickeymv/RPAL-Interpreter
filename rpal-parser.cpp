@@ -135,7 +135,7 @@ void readStringToken(ifstream &file) {
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
 
-    if (peek != '\'') { //check for the single quote to start the string
+    if (peek == '\'') { //check for the single quote to start the string
         file.get(x);
         //NT += x; //No need to add the quotes to the string token
         peek = file.peek();
@@ -148,7 +148,7 @@ void readStringToken(ifstream &file) {
         NT += x;
         peek = file.peek();
     }
-    if (peek != '\'') { //check for the single quote to close the string
+    if (peek == '\'') { //check for the single quote to close the string
         file.get(x);
         //NT += x; //No need to add the quotes to the string token
     } else {
@@ -264,7 +264,7 @@ void D(ifstream &file) {
 
 void Rn(ifstream &file) {
     if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || nextTokenType.compare(INTEGER_TOKEN) == 0 ||
-        nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        nextTokenType.compare(STRING_TOKEN) == 0) {
         readToken(file, nextTokenType);
     } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
                NT.compare("nil") == 0 || NT.compare("dummy") == 0) {
@@ -279,7 +279,7 @@ void Rn(ifstream &file) {
 void R(ifstream &file) {
     Rn(file);
     while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || nextTokenType.compare(INTEGER_TOKEN) == 0 ||
-           nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("true") == 0 || NT.compare("false") == 0 ||
+           nextTokenType.compare(STRING_TOKEN) == 0 || NT.compare("true") == 0 || NT.compare("false") == 0 ||
            NT.compare("nil") == 0 || NT.compare("dummy") == 0 || NT.compare("(") == 0) {
         Rn(file);
     }
