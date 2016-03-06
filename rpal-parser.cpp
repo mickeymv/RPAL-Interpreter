@@ -464,6 +464,7 @@ void scan(ifstream &file) {
         char x;
         file.get(x); //further the file pointer and ignore the whitespace character (no need to tokenize it)
         //NT += x;
+        scan(file); //call scan to get the next token
     } else if (isPunctuation(peek)) {
         readPunctuationChar(file);
     } else {
