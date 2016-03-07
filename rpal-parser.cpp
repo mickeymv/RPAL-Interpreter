@@ -92,7 +92,8 @@ void readIdentifierToken(ifstream &file) {
     if (NT.compare("rec") == 0 || NT.compare("where") == 0 || NT.compare("in") == 0 || NT.compare("and") == 0 ||
         NT.compare("let") == 0 || NT.compare("fn") == 0 || NT.compare("or") == 0 || NT.compare("not") == 0 ||
         NT.compare("gr") == 0 || NT.compare("ge") == 0 || NT.compare("ls") == 0 || NT.compare("le") == 0 ||
-        NT.compare("eq") == 0 || NT.compare("ne") == 0 || NT.compare("within") == 0) {
+        NT.compare("eq") == 0 || NT.compare("ne") == 0 || NT.compare("within") == 0 || NT.compare("true") == 0 ||
+        NT.compare("false") == 0 || NT.compare("nil") == 0 || NT.compare("dummy") == 0 || NT.compare("aug") == 0) {
         nextTokenType = KEYWORD_TOKEN;
         //cout << "\nKeyword: " << NT << "\n";
     }
@@ -379,7 +380,7 @@ void Rn(ifstream &file) {
         readToken(file, INTEGER_TOKEN);
     } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
                NT.compare("nil") == 0 || NT.compare("dummy") == 0) {
-        buildTree(NT, 0);
+        buildTree("<" + NT + ">", 0);
         readToken(file, NT);
     } else if (NT.compare("(") == 0) {
         readToken(file, "(");
