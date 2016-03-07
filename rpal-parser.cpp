@@ -2,12 +2,15 @@
 #include <fstream>
 #include <stack>
 
+#include <cstdlib>
+#include <cstring>
+
+using namespace std;
+
 /**
  * Author: Mickey Vellukunnel
  * UFID: 9413-9616
  */
-
-using namespace std;
 
 string NT; //NextToken
 const string IDENTIFIER_TOKEN = "IDENTIFIER";
@@ -18,16 +21,15 @@ const string KEYWORD_TOKEN = "KEYWORD";
 const string UNDEFINED_TOKEN = "UNDEFINED";
 const string PUNCTUATION_TOKEN = "PUNCTUATION";
 
-const char operatorArray[] = {'+', '-', '*', '<', '>', '&', '.', '@', '/', ':', '=', '~', '|', '$', '!', '#', '!', '^',
-                              '_', '[', ']', '{', '}', '"', '`', '?', '\0'};
+const char *operatorArray = "+-*<>&.@/:=~|$!#!^_[]{}\"`?";
 
-const char stringAllowedCharArray[] = {'(', ')', ';', ',', ' ', '\0'};
+const char *stringAllowedCharArray = "();, ";
 
-const char stringAllowedEscapeCharArray[] = {'t', 'n', '\\', '\'', '\0'};
+const char *stringAllowedEscapeCharArray = "tn\\\'";
 
-const char eolCharArray[] = {'\r', '\n', '\0'};
+const char *eolCharArray = "\r\n";
 
-const char punctuationArray[] = {'(', ')', ';', ',', '\0'};
+const char *punctuationArray = "();,";
 
 string nextTokenType = UNDEFINED_TOKEN;
 
@@ -84,7 +86,7 @@ void readIdentifierToken(ifstream &file) {
     nextTokenType = IDENTIFIER_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
-    while (isalpha(peek) || isnumber(peek) || peek == '_') {
+    while (isalpha(peek) || isdigit(peek) || peek == '_') {
         file.get(x);
         NT += x;
         peek = file.peek();
@@ -110,7 +112,7 @@ void readIntegerToken(ifstream &file) {
     nextTokenType = INTEGER_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
-    while (isnumber(peek)) {
+    while (isdigit(peek)) {
         file.get(x);
         NT += x;
         peek = file.peek();
@@ -119,14 +121,14 @@ void readIntegerToken(ifstream &file) {
 }
 
 bool isOperator(char c) {
-    if (std::find(std::begin(operatorArray), std::end(operatorArray), c) != std::end(operatorArray))
+    if (strchr(operatorArray, c))
         return true;
     else
         return false;
 }
 
 bool isPunctuation(char c) {
-    if (std::find(std::begin(punctuationArray), std::end(punctuationArray), c) != std::end(punctuationArray))
+    if (strchr(punctuationArray, c))
         return true;
     else
         return false;
@@ -148,8 +150,7 @@ void readPunctuationChar(ifstream &file) {
 }
 
 bool isStringAllowedChar(char c) {
-    if ((std::find(std::begin(stringAllowedCharArray), std::end(stringAllowedCharArray), c) !=
-         std::end(stringAllowedCharArray)) || isnumber(c) || isalpha(c) || isOperator(c))
+    if (strchr(stringAllowedCharArray, c))
         return true;
     else
         return false;
@@ -162,8 +163,7 @@ bool isEscapeCharInString(ifstream &file, char &peek) {
         file.get(x);
         NT += x; //Add the escape backslash to the string token (as per the reference implementation)
         peek = file.peek();
-        if (std::find(std::begin(stringAllowedEscapeCharArray), std::end(stringAllowedEscapeCharArray), peek) !=
-            std::end(stringAllowedEscapeCharArray)) {
+        if (strchr(stringAllowedCharArray, peek)) {
             file.get(x);
             NT += x;
             peek = file.peek();
@@ -171,7 +171,7 @@ bool isEscapeCharInString(ifstream &file, char &peek) {
         }
         else {
             cout << "\n\nERROR! Expected an escape character, but " << peek << " happened! Parser will DIE now!\n\n";
-            throw std::exception();
+            throw exception();
         }
     }
     else
@@ -193,7 +193,7 @@ void readStringToken(ifstream &file) {
         peek = file.peek();
     } else {
         cout << "\n\nERROR! Expected start of string, but " << peek << " happened! Parser will DIE now!\n\n";
-        throw std::exception();
+        throw exception();
     }
     while (isStringAllowedChar(peek) || (isEscapeCharInString(file, peek) && isStringAllowedChar(peek))) {
         file.get(x);
@@ -205,7 +205,7 @@ void readStringToken(ifstream &file) {
         //NT += x; //No need to add the quotes to the string token
     } else {
         cout << "\n\nERROR! Expected close of string, but " << peek << " happened! Parser will DIE now!\n\n";
-        throw std::exception();
+        throw exception();
     }
     //cout << "\nString: " << NT << "\n";
 }
@@ -234,8 +234,7 @@ void resolveIfCommentOrOperator(ifstream &file) {
     char peek = file.peek();
     if (peek == '/') {
         //This means it's a comment line, so keep reading/updating file stream pointer without "tokenizing" (adding to NT) until an eol.
-        while (!(std::find(std::begin(eolCharArray), std::end(eolCharArray), peek) !=
-                 std::end(eolCharArray))) {
+        while (!strchr(eolCharArray, peek)) {
             file.get(x); //move past the whitespaces until an eol
             peek = file.peek();
         }
@@ -613,7 +612,7 @@ void scan(ifstream &file) {
 
     if (isalpha(peek)) {
         readIdentifierToken(file);
-    } else if (isnumber(peek)) {
+    } else if (isdigit(peek)) {
         readIntegerToken(file);
     } else if (peek == '/') {
         resolveIfCommentOrOperator(file);
@@ -655,7 +654,7 @@ void printTree() {
 void readToken(ifstream &file, string token) {
     if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
-        throw std::exception();
+        throw exception();
     }
     //cout << "\ntoken '" << token << "' used! going to read next!";
     scan(file);
