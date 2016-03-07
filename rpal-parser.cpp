@@ -250,26 +250,22 @@ void D(ifstream &file);
 
 void readToken(ifstream &file, string token);
 
-void Vl(ifstream &file, bool isVListStarted) {
+int Vl(ifstream &file, int identifiersReadBefore, bool isRecursiveCall) {
     cout << "\nVl!";
     buildTree("<ID:" + NT + ">", 0);
     readToken(file, IDENTIFIER_TOKEN);
-    int n;
-    if (isVListStarted) {
-        n = 2; //since Vl is called after already reading an <ID> and ','
-    } else {
-        n = 1;
-    }
     if (NT.compare(",") == 0) {
         readToken(file, ",");
-        Vl(file, true);
-        n++;
+        identifiersReadBefore += 1;
+        identifiersReadBefore = Vl(file, identifiersReadBefore, true);
     }
-    if (n > 1) {
+    int identifiersInVList = identifiersReadBefore + 1;
+    if (!isRecursiveCall && identifiersInVList > 1) {
         cout << "\nBefore calling buildTree in Vl\n";
-        cout << "\nn= " << n << ", and trees are of number: " << trees.size();
-        buildTree(",", n);
+        cout << "\nidentifiersInVList= " << identifiersInVList << ", and trees are of number: " << trees.size();
+        buildTree(",", identifiersInVList);
     }
+    return identifiersReadBefore;
 }
 
 void Vb(ifstream &file) {
@@ -278,7 +274,7 @@ void Vb(ifstream &file) {
         readToken(file, "(");
         bool isVl = false;
         if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
-            Vl(file, false);
+            Vl(file, 0, false);
             isVl = true;
         }
         readToken(file, ")");
@@ -303,7 +299,7 @@ void Db(ifstream &file) {
         readToken(file, IDENTIFIER_TOKEN);
         if (NT.compare(",") == 0) {
             readToken(file, ",");
-            Vl(file, true);
+            Vl(file, 1, false);
             readToken(file, "=");
             E(file);
             cout << "\nBefore calling buildTree in Db\n";
