@@ -36,6 +36,9 @@ bool checkIfEOF(ifstream &file) {
     return false;
 }
 
+void buildTree(string node, int noOfTreesToPopAndMakeChildren) {
+    return;
+}
 
 void readIdentifierToken(ifstream &file) {
     if (checkIfEOF(file)) {
@@ -219,20 +222,28 @@ void readToken(ifstream &file, string token);
 void Vl(ifstream &file) {
     //cout << "\nVl!";
     readToken(file, IDENTIFIER_TOKEN);
+    int n = 2; //since Vl is called after already reading an <ID> and ','
     if (NT.compare(",") == 0) {
         readToken(file, ",");
         Vl(file);
+        n++;
     }
+    buildTree(",", n);
 }
 
 void Vb(ifstream &file) {
     //cout << "\nVb!";
     if (NT.compare("(") == 0) {
         readToken(file, "(");
+        bool isVl = false;
         if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
             Vl(file);
+            isVl = true;
         }
         readToken(file, ")");
+        if (!isVl) {
+            buildTree("()", 0);
+        }
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
         readToken(file, IDENTIFIER_TOKEN);
     }
@@ -251,32 +262,44 @@ void Db(ifstream &file) {
             Vl(file);
             readToken(file, "=");
             E(file);
+            buildTree("=", 2);
         } else {
+            int n = 1;
             while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0) {
                 Vb(file);
+                n++;
             }
             readToken(file, "=");
             E(file);
+            buildTree("function_form", n + 1); //n + 'E'
         }
     }
 }
 
 void Dr(ifstream &file) {
     //cout << "\nDr!";
+    int isRec = false;
     if (NT.compare("rec") == 0) {
         //cout << "\n Going to consume \"REC!\"";
         readToken(file, "rec");
+        isRec = true;
     }
     Db(file);
+    if (isRec) {
+        buildTree("rec", 1);
+    }
 }
 
 void Da(ifstream &file) {
     //cout << "\nDa!";
     Dr(file);
+    int n = 1;
     while (NT.compare("and") == 0) {
         readToken(file, "and");
         Dr(file);
+        n++;
     }
+    buildTree("and", n); //TODO: might break. does '+' imply we need to put all children under a single node?
 }
 
 void D(ifstream &file) {
@@ -285,17 +308,25 @@ void D(ifstream &file) {
     if (NT.compare("within") == 0) {
         readToken(file, "within");
         D(file);
+        buildTree("within", 2);
     }
 }
 
 void Rn(ifstream &file) {
     //cout << "\nRn!";
-    if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || nextTokenType.compare(INTEGER_TOKEN) == 0 ||
-        nextTokenType.compare(STRING_TOKEN) == 0) {
-        readToken(file, nextTokenType);
+    if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        readToken(file, IDENTIFIER_TOKEN);
+        buildTree("<ID:" + NT + ">", 0);
+    } else if (nextTokenType.compare(STRING_TOKEN) == 0) {
+        readToken(file, STRING_TOKEN);
+        buildTree("<STR:" + NT + ">", 0);
+    } else if (nextTokenType.compare(INTEGER_TOKEN) == 0) {
+        readToken(file, INTEGER_TOKEN);
+        buildTree("<INT:" + NT + ">", 0);
     } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
                NT.compare("nil") == 0 || NT.compare("dummy") == 0) {
         readToken(file, NT);
+        buildTree(NT, 0);
     } else if (NT.compare("(") == 0) {
         readToken(file, "(");
         E(file);
@@ -310,6 +341,7 @@ void R(ifstream &file) {
            nextTokenType.compare(STRING_TOKEN) == 0 || NT.compare("true") == 0 || NT.compare("false") == 0 ||
            NT.compare("nil") == 0 || NT.compare("dummy") == 0 || NT.compare("(") == 0) {
         Rn(file);
+        buildTree("gamma", 2);
     }
 }
 
@@ -321,6 +353,7 @@ void Ap(ifstream &file) {
         readToken(file, "@");
         readToken(file, IDENTIFIER_TOKEN);
         R(file);
+        buildTree("@", 3);
     }
 }
 
@@ -330,6 +363,7 @@ void Af(ifstream &file) {
     if (NT.compare("**") == 0) {
         readToken(file, "**");
         Af(file);
+        buildTree("**", 2);
     }
 }
 
@@ -337,8 +371,10 @@ void At(ifstream &file) {
     //cout << "\nAt!";
     Af(file);
     while (NT.compare("*") == 0 || NT.compare("/") == 0) {
+        string token = NT; //saving token since call to read will update NT with the next token.
         readToken(file, NT);
         Af(file);
+        buildTree(token, 2);
     }
 }
 
@@ -346,13 +382,19 @@ void A(ifstream &file) {
     //cout << "\nA!";
     if (NT.compare("+") == 0) {
         readToken(file, "+");
+        At(file);
     } else if (NT.compare("-") == 0) {
         readToken(file, "-");
+        At(file);
+        buildTree("neg", 1);
+    } else {
+        At(file);
     }
-    At(file);
     while (NT.compare("+") == 0 || NT.compare("-") == 0) {
+        string token = NT; //saving token since call to read will update NT with the next token.
         readToken(file, NT);
         At(file);
+        buildTree(token, 2);
     }
 }
 
@@ -362,48 +404,65 @@ void Bp(ifstream &file) {
     if (NT.compare("gr") == 0 || NT.compare(">") == 0) {
         readToken(file, NT);
         A(file);
+        buildTree("gr", 2);
     } else if (NT.compare("ge") == 0 || NT.compare(">=") == 0) {
         readToken(file, NT);
         A(file);
+        buildTree("ge", 2);
     } else if (NT.compare("ls") == 0 || NT.compare("<") == 0) {
         readToken(file, NT);
         A(file);
+        buildTree("ls", 2);
     } else if (NT.compare("le") == 0 || NT.compare("<=") == 0) {
         readToken(file, NT);
         A(file);
+        buildTree("le", 2);
     } else if (NT.compare("eq") == 0) {
         readToken(file, "eq");
         A(file);
+        buildTree("eq", 2);
     } else if (NT.compare("ne") == 0) {
         readToken(file, "ne");
         A(file);
+        buildTree("ne", 2);
     }
 }
 
 void Bs(ifstream &file) {
     //cout << "\nBs!";
+    bool isNeg = false;
     if (NT.compare("not") == 0) {
         readToken(file, "not");
+        isNeg = true;
     }
     Bp(file);
+    if (isNeg) {
+        buildTree("not", 1);
+    }
 }
 
 void Bt(ifstream &file) {
     //cout << "\nBt!";
     Bs(file);
+    int n = 1;
     while (NT.compare("&") == 0) {
         readToken(file, "&");
         Bs(file);
+        n++;
     }
+    buildTree("&", n);
 }
 
 void B(ifstream &file) {
     //cout << "\nB!";
     Bt(file);
+    int n = 1;
     while (NT.compare("or") == 0) {
         readToken(file, "or");
         Bt(file);
+        n++;
     }
+    buildTree("or", n);
 }
 
 void Tc(ifstream &file) {
@@ -415,24 +474,35 @@ void Tc(ifstream &file) {
         Tc(file);
         readToken(file, "|");
         Tc(file);
+        buildTree("->", 3);
     }
 }
 
 void Ta(ifstream &file) {
     //cout << "\nTa!";
     Tc(file);
+    int n = 1;
     while (NT.compare("aug") == 0) { //left recursion
         readToken(file, "aug");
         Tc(file);
+        n++;
+    }
+    if (n != 1) {
+        buildTree("aug", n);
     }
 }
 
 void T(ifstream &file) {
     //cout << "\nT!";
     Ta(file);
+    int n = 1;
     while (NT.compare(",") == 0) { //combo of left recursion AND common prefix
+        n++;
         readToken(file, ",");
         Ta(file);
+    }
+    if (n != 1) {
+        buildTree("tau", n);
     }
 }
 
@@ -443,6 +513,7 @@ void Ew(ifstream &file) {
         //cout << "\n Going to consume \"WHERE!\"";
         readToken(file, "where");
         Dr(file);
+        buildTree("where", 2);
     }
 }
 
@@ -454,6 +525,7 @@ void E(ifstream &file) {
         D(file);
         readToken(file, "in");
         E(file);
+        buildTree("let", 2);
     } else if (NT.compare("fn") == 0) {
         readToken(file, "fn");
         do {
@@ -462,6 +534,7 @@ void E(ifstream &file) {
         } while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0);
         readToken(file, ".");
         E(file);
+        buildTree("lambda", N + 1); //number of 'Vb's plus the 'E'
     } else {
         Ew(file);
     }

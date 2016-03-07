@@ -1,0 +1,3 @@
+let p = fn let. let eq 0 -> 'zero' | 'not zero'
+
+in Print (p 0, p 1) 
