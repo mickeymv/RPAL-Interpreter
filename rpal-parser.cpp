@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <stack>
 
 /**
  * Author: Mickey Vellukunnel
@@ -15,6 +16,7 @@ const string STRING_TOKEN = "STRING";
 const string OPERATOR_TOKEN = "OPERATOR";
 const string KEYWORD_TOKEN = "KEYWORD";
 const string UNDEFINED_TOKEN = "UNDEFINED";
+const string PUNCTUATION_TOKEN = "PUNCTUATION";
 
 const char operatorArray[] = {'+', '-', '*', '<', '>', '&', '.', '@', '/', ':', '=', '~', '|', '$', '!', '#', '!', '^',
                               '_', '[', ']', '{', '}', '"', '`', '?', '\0'};
@@ -29,6 +31,15 @@ const char punctuationArray[] = {'(', ')', ';', ',', '\0'};
 
 string nextTokenType = UNDEFINED_TOKEN;
 
+struct Node {
+    string label;
+    struct Node *firstKid;
+    struct Node *nextSibling;
+};
+
+stack<Node *> trees;
+
+
 bool checkIfEOF(ifstream &file) {
     if (!file.good() || file.peek() == EOF) {
         return true;
@@ -36,7 +47,27 @@ bool checkIfEOF(ifstream &file) {
     return false;
 }
 
-void buildTree(string node, int noOfTreesToPopAndMakeChildren) {
+void buildTree(string nodeLabel, int noOfTreesToPopAndMakeChildren) {
+    Node *treeNode = new Node;
+    treeNode->label = nodeLabel;
+    treeNode->nextSibling = NULL;
+    Node *treeNodePtr = NULL; //which will point to the first child of children (if any) of the newly added node
+    if (noOfTreesToPopAndMakeChildren > 0 && trees.empty()) {
+        cout << "\n\nERROR! Something went wrong in AST generation! Program will die now!\n\n";
+        exit(0);
+    }
+    while (noOfTreesToPopAndMakeChildren > 0 && !trees.empty()) {
+        if (treeNodePtr != NULL) {
+            trees.top()->nextSibling = treeNodePtr;
+            treeNodePtr = trees.top();
+        } else {
+            treeNodePtr = trees.top();
+        }
+        trees.pop();
+        noOfTreesToPopAndMakeChildren--;
+    }
+    treeNode->firstKid = treeNodePtr;
+    trees.push(treeNode);
     return;
 }
 
@@ -100,7 +131,7 @@ void readPunctuationChar(ifstream &file) {
         cout << "\n\nEOF reached unexpectedly without correct parsing through grammar! Will die now!!\n\n";
         exit(0);
     }
-    //nextTokenType = PUNCTUATION_TOKEN;
+    nextTokenType = PUNCTUATION_TOKEN;
     char x; //get the next character in stream in this
     char peek = file.peek(); //peek and store the next character in stream in this
     if (isPunctuation(peek)) {
@@ -219,49 +250,63 @@ void D(ifstream &file);
 
 void readToken(ifstream &file, string token);
 
-void Vl(ifstream &file) {
-    //cout << "\nVl!";
+void Vl(ifstream &file, bool isVListStarted) {
+    cout << "\nVl!";
+    buildTree("<ID:" + NT + ">", 0);
     readToken(file, IDENTIFIER_TOKEN);
-    int n = 2; //since Vl is called after already reading an <ID> and ','
+    int n;
+    if (isVListStarted) {
+        n = 2; //since Vl is called after already reading an <ID> and ','
+    } else {
+        n = 1;
+    }
     if (NT.compare(",") == 0) {
         readToken(file, ",");
-        Vl(file);
+        Vl(file, true);
         n++;
     }
-    buildTree(",", n);
+    if (n > 1) {
+        cout << "\nBefore calling buildTree in Vl\n";
+        cout << "\nn= " << n << ", and trees are of number: " << trees.size();
+        buildTree(",", n);
+    }
 }
 
 void Vb(ifstream &file) {
-    //cout << "\nVb!";
+    cout << "\nVb!";
     if (NT.compare("(") == 0) {
         readToken(file, "(");
         bool isVl = false;
         if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
-            Vl(file);
+            Vl(file, false);
             isVl = true;
         }
         readToken(file, ")");
         if (!isVl) {
+            cout << "\nBefore calling buildTree in Vb\n";
             buildTree("()", 0);
         }
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        buildTree("<ID:" + NT + ">", 0);
         readToken(file, IDENTIFIER_TOKEN);
     }
 }
 
 void Db(ifstream &file) {
-    //cout << "\nDb!";
+    cout << "\nDb!";
     if (NT.compare("(") == 0) {
         readToken(file, "(");
         D(file);
         readToken(file, ")");
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        buildTree("<ID:" + NT + ">", 0);
         readToken(file, IDENTIFIER_TOKEN);
         if (NT.compare(",") == 0) {
             readToken(file, ",");
-            Vl(file);
+            Vl(file, true);
             readToken(file, "=");
             E(file);
+            cout << "\nBefore calling buildTree in Db\n";
             buildTree("=", 2);
         } else {
             int n = 1;
@@ -299,7 +344,9 @@ void Da(ifstream &file) {
         Dr(file);
         n++;
     }
-    buildTree("and", n); //TODO: might break. does '+' imply we need to put all children under a single node?
+    if (n > 1) {
+        buildTree("and", n); //TODO: might break. does '+' imply we need to put all children under a single node?
+    }
 }
 
 void D(ifstream &file) {
@@ -315,18 +362,18 @@ void D(ifstream &file) {
 void Rn(ifstream &file) {
     //cout << "\nRn!";
     if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
-        readToken(file, IDENTIFIER_TOKEN);
         buildTree("<ID:" + NT + ">", 0);
+        readToken(file, IDENTIFIER_TOKEN);
     } else if (nextTokenType.compare(STRING_TOKEN) == 0) {
-        readToken(file, STRING_TOKEN);
         buildTree("<STR:" + NT + ">", 0);
+        readToken(file, STRING_TOKEN);
     } else if (nextTokenType.compare(INTEGER_TOKEN) == 0) {
-        readToken(file, INTEGER_TOKEN);
         buildTree("<INT:" + NT + ">", 0);
+        readToken(file, INTEGER_TOKEN);
     } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
                NT.compare("nil") == 0 || NT.compare("dummy") == 0) {
-        readToken(file, NT);
         buildTree(NT, 0);
+        readToken(file, NT);
     } else if (NT.compare("(") == 0) {
         readToken(file, "(");
         E(file);
@@ -351,7 +398,7 @@ void Ap(ifstream &file) {
     while (NT.compare("@") ==
            0) {
         readToken(file, "@");
-        readToken(file, IDENTIFIER_TOKEN);
+        readToken(file, IDENTIFIER_TOKEN); //TODO: should we add a buildTree here of ID?
         R(file);
         buildTree("@", 3);
     }
@@ -450,7 +497,9 @@ void Bt(ifstream &file) {
         Bs(file);
         n++;
     }
-    buildTree("&", n);
+    if (n > 1) {
+        buildTree("&", n);
+    }
 }
 
 void B(ifstream &file) {
@@ -462,7 +511,9 @@ void B(ifstream &file) {
         Bt(file);
         n++;
     }
-    buildTree("or", n);
+    if (n > 1) {
+        buildTree("or", n);
+    }
 }
 
 void Tc(ifstream &file) {
@@ -573,6 +624,23 @@ void scan(ifstream &file) {
     }
 }
 
+void recursivelyPrintTree(Node *node, string indentDots) {
+    if (node->nextSibling != NULL) {
+        recursivelyPrintTree(node->nextSibling, indentDots);
+    }
+    if (node->firstKid != NULL) {
+        recursivelyPrintTree(node->firstKid, indentDots + ".");
+    }
+
+}
+
+void printTree() {
+    while (!trees.empty()) {
+        Node *treeNode = trees.top();
+        recursivelyPrintTree(treeNode, "");
+        trees.pop();
+    }
+}
 void readToken(ifstream &file, string token) {
     if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
@@ -637,6 +705,7 @@ int main(int argc, char *argv[]) {
                 if (checkIfEOF(the_file)) {
 //                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
 //                    exit(1);
+                    printTree();
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
