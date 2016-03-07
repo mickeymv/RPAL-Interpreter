@@ -48,6 +48,7 @@ bool checkIfEOF(ifstream &file) {
 }
 
 void buildTree(string nodeLabel, int noOfTreesToPopAndMakeChildren) {
+    //cout << "\n# Going to build the node: '" << nodeLabel << "' in tree!";
     Node *treeNode = new Node;
     treeNode->label = nodeLabel;
     treeNode->nextSibling = NULL;
@@ -58,15 +59,19 @@ void buildTree(string nodeLabel, int noOfTreesToPopAndMakeChildren) {
     }
     while (noOfTreesToPopAndMakeChildren > 0 && !trees.empty()) {
         if (treeNodePtr != NULL) {
+            //cout << "\n# Node '" << trees.top()->label << "' to be the child of tree: '" << nodeLabel <<
+            //"', and left-sibling of '" << treeNodePtr->label;
             trees.top()->nextSibling = treeNodePtr;
             treeNodePtr = trees.top();
         } else {
             treeNodePtr = trees.top();
+            //cout << "\n# Node '" << treeNodePtr->label << "' to be the child of tree: '" << nodeLabel << "'";
         }
         trees.pop();
         noOfTreesToPopAndMakeChildren--;
     }
     treeNode->firstKid = treeNodePtr;
+    //cout << "\n# Adding to tree the Node: '" << nodeLabel << "'";
     trees.push(treeNode);
     return;
 }
@@ -251,7 +256,7 @@ void D(ifstream &file);
 void readToken(ifstream &file, string token);
 
 int Vl(ifstream &file, int identifiersReadBefore, bool isRecursiveCall) {
-    cout << "\nVl!";
+    //cout << "\nVl!";
     buildTree("<ID:" + NT + ">", 0);
     readToken(file, IDENTIFIER_TOKEN);
     if (NT.compare(",") == 0) {
@@ -261,15 +266,15 @@ int Vl(ifstream &file, int identifiersReadBefore, bool isRecursiveCall) {
     }
     int identifiersInVList = identifiersReadBefore + 1;
     if (!isRecursiveCall && identifiersInVList > 1) {
-        cout << "\nBefore calling buildTree in Vl\n";
-        cout << "\nidentifiersInVList= " << identifiersInVList << ", and trees are of number: " << trees.size();
+        //cout << "\nBefore calling buildTree in Vl\n";
+        //cout << "\nidentifiersInVList= " << identifiersInVList << ", and trees are of number: " << trees.size();
         buildTree(",", identifiersInVList);
     }
     return identifiersReadBefore;
 }
 
 void Vb(ifstream &file) {
-    cout << "\nVb!";
+    //cout << "\nVb!";
     if (NT.compare("(") == 0) {
         readToken(file, "(");
         bool isVl = false;
@@ -279,7 +284,7 @@ void Vb(ifstream &file) {
         }
         readToken(file, ")");
         if (!isVl) {
-            cout << "\nBefore calling buildTree in Vb\n";
+            //cout << "\nBefore calling buildTree in Vb\n";
             buildTree("()", 0);
         }
     } else if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
@@ -289,7 +294,7 @@ void Vb(ifstream &file) {
 }
 
 void Db(ifstream &file) {
-    cout << "\nDb!";
+    //cout << "\nDb!";
     if (NT.compare("(") == 0) {
         readToken(file, "(");
         D(file);
@@ -302,7 +307,7 @@ void Db(ifstream &file) {
             Vl(file, 1, false);
             readToken(file, "=");
             E(file);
-            cout << "\nBefore calling buildTree in Db\n";
+            //cout << "\nBefore calling buildTree in Db\n";
             buildTree("=", 2);
         } else {
             int n = 1;
@@ -312,6 +317,7 @@ void Db(ifstream &file) {
             }
             readToken(file, "=");
             E(file);
+            //cout << "\nBefore calling buildTree in Db2\n";
             buildTree("function_form", n + 1); //n + 'E'
         }
     }
@@ -327,6 +333,7 @@ void Dr(ifstream &file) {
     }
     Db(file);
     if (isRec) {
+        //cout << "\nBefore calling buildTree in Dr\n";
         buildTree("rec", 1);
     }
 }
@@ -341,6 +348,7 @@ void Da(ifstream &file) {
         n++;
     }
     if (n > 1) {
+        //cout << "\nBefore calling buildTree in Da\n";
         buildTree("and", n); //TODO: might break. does '+' imply we need to put all children under a single node?
     }
 }
@@ -358,12 +366,15 @@ void D(ifstream &file) {
 void Rn(ifstream &file) {
     //cout << "\nRn!";
     if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
+        //cout << "\n\nbuildTreeNode ID:" + NT + "\n\n";
         buildTree("<ID:" + NT + ">", 0);
         readToken(file, IDENTIFIER_TOKEN);
     } else if (nextTokenType.compare(STRING_TOKEN) == 0) {
+        //cout << "\n\nbuildTreeNode STR:" + NT + "\n\n";
         buildTree("<STR:" + NT + ">", 0);
         readToken(file, STRING_TOKEN);
     } else if (nextTokenType.compare(INTEGER_TOKEN) == 0) {
+        //cout << "\n\nbuildTreeNode INT:" + NT + "\n\n";
         buildTree("<INT:" + NT + ">", 0);
         readToken(file, INTEGER_TOKEN);
     } else if (NT.compare("true") == 0 || NT.compare("false") == 0 ||
@@ -621,22 +632,25 @@ void scan(ifstream &file) {
 }
 
 void recursivelyPrintTree(Node *node, string indentDots) {
-    if (node->nextSibling != NULL) {
-        recursivelyPrintTree(node->nextSibling, indentDots);
-    }
+    cout << indentDots + node->label << "\n";
     if (node->firstKid != NULL) {
         recursivelyPrintTree(node->firstKid, indentDots + ".");
     }
-
+    if (node->nextSibling != NULL) {
+        recursivelyPrintTree(node->nextSibling, indentDots);
+    }
 }
 
 void printTree() {
+    //cout << "\n\nGoing to print the tree now!\n\n";
     while (!trees.empty()) {
+        //cout << "\n\nThis is supposed to be the only tree below!\n";
         Node *treeNode = trees.top();
         recursivelyPrintTree(treeNode, "");
         trees.pop();
     }
 }
+
 void readToken(ifstream &file, string token) {
     if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
@@ -668,12 +682,24 @@ int main(int argc, char *argv[]) {
                     //  is reached or an error occurs
                     while (the_file.get(x))
                         cout << x;
-
                     // the_file is closed implicitly here
                     cout << "\n\n";
                 } else if (strcmp(argv[1], "-ast") == 0) {
                     //Call ast generator
-                    cout << "\n\nAST Tree should print!\n\n";
+                    //Call parser
+                    //cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
+                    scan(the_file); //Prepare the first token by placing it within 'NT'
+                    E(the_file);    //Call the first non-terminal procedure to start parsing
+                    //cout << " " << NT;
+                    if (checkIfEOF(the_file)) {
+//                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
+//                    exit(1);
+                        //cout << "\n\nAST Tree should print!\n\n";
+                        printTree();
+                    } else {
+                        cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
+                        exit(0);
+                    }
                 }
             }
         }
@@ -701,7 +727,6 @@ int main(int argc, char *argv[]) {
                 if (checkIfEOF(the_file)) {
 //                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
 //                    exit(1);
-                    printTree();
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
