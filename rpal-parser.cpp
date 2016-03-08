@@ -150,7 +150,7 @@ void readPunctuationChar(ifstream &file) {
 }
 
 bool isStringAllowedChar(char c) {
-    if (strchr(stringAllowedCharArray, c))
+    if (strchr(stringAllowedCharArray, c) || isnumber(c) || isalpha(c) || isOperator(c))
         return true;
     else
         return false;
@@ -163,7 +163,7 @@ bool isEscapeCharInString(ifstream &file, char &peek) {
         file.get(x);
         NT += x; //Add the escape backslash to the string token (as per the reference implementation)
         peek = file.peek();
-        if (strchr(stringAllowedCharArray, peek)) {
+        if (strchr(stringAllowedEscapeCharArray, peek)) {
             file.get(x);
             NT += x;
             peek = file.peek();
