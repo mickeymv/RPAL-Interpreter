@@ -545,14 +545,10 @@ void Tc(ifstream &file) {
 void Ta(ifstream &file) {
     //cout << "\nTa!";
     Tc(file);
-    int n = 1;
     while (NT.compare("aug") == 0) { //left recursion
         readToken(file, "aug");
         Tc(file);
-        n++;
-    }
-    if (n != 1) {
-        buildTree("aug", n);
+        buildTree("aug", 2);
     }
 }
 
