@@ -150,7 +150,7 @@ void readPunctuationChar(ifstream &file) {
 }
 
 bool isStringAllowedChar(char c) {
-    if (strchr(stringAllowedCharArray, c) || isnumber(c) || isalpha(c) || isOperator(c))
+    if (strchr(stringAllowedCharArray, c) || isdigit(c) || isalpha(c) || isOperator(c))
         return true;
     else
         return false;
