@@ -1,0 +1,3 @@
+let f x = 3
+in
+Print (f 32)

@@ -189,7 +189,7 @@ void readStringToken(ifstream &file) {
 
     if (peek == '\'') { //check for the single quote to start the string
         file.get(x);
-        //NT += x; //No need to add the quotes to the string token
+        NT += x; //Add quotes to the token to separate the string from non-string literals with same value
         peek = file.peek();
     } else {
         cout << "\n\nERROR! Expected start of string, but " << peek << " happened! Parser will DIE now!\n\n";
@@ -202,7 +202,7 @@ void readStringToken(ifstream &file) {
     }
     if (peek == '\'') { //check for the single quote to close the string
         file.get(x);
-        //NT += x; //No need to add the quotes to the string token
+        NT += x; //Add quotes to the token to separate the string from non-string literals with same value
     } else {
         cout << "\n\nERROR! Expected close of string, but " << peek << " happened! Parser will DIE now!\n\n";
         throw exception();
