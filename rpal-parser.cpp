@@ -10,6 +10,13 @@ using namespace std;
 /**
  * Author: Mickey Vellukunnel
  * UFID: 9413-9616
+ *
+ * University of Florida (Go Gators!)
+ *
+ * COP 5556 Spring 2016
+ *
+ * Project 1: RPal Parser
+ *
  */
 
 string NT; //NextToken
@@ -33,21 +40,29 @@ const char *punctuationArray = "();,";
 
 string nextTokenType = UNDEFINED_TOKEN;
 
-struct Node {
+struct Node { // For the first child next sibling binary tree representation of nary trees.
     string label;
     struct Node *firstKid;
     struct Node *nextSibling;
 };
 
-stack<Node *> trees;
+stack<Node *> trees; //Stack of trees used to manipulate the AST generation.
 
-
+/*
+ * Check if the end of file has been reached.
+ */
 bool checkIfEOF(ifstream &file) {
     if (!file.good() || file.peek() == EOF) {
         return true;
     }
     return false;
 }
+
+/*
+ * Helper function to build a new tree node, and add it to the
+ * stack of trees, if necessary by popping existing trees from
+ * stack and adding it as children to the new node.
+ */
 
 void buildTree(string nodeLabel, int noOfTreesToPopAndMakeChildren) {
     //cout << "\n# Going to build the node: '" << nodeLabel << "' in tree!";
@@ -78,6 +93,9 @@ void buildTree(string nodeLabel, int noOfTreesToPopAndMakeChildren) {
     return;
 }
 
+/**
+ * Read an identifier/keyword token into NT.
+ */
 void readIdentifierToken(ifstream &file) {
     if (checkIfEOF(file)) {
         cout << "\n\nEOF reached unexpectedly without correct parsing through grammar! Will die now!!\n\n";
@@ -104,6 +122,9 @@ void readIdentifierToken(ifstream &file) {
     }
 }
 
+/**
+ * Read an integer token into NT.
+ */
 void readIntegerToken(ifstream &file) {
     if (checkIfEOF(file)) {
         cout << "\n\nEOF reached unexpectedly without correct parsing through grammar! Will die now!!\n\n";
@@ -120,6 +141,9 @@ void readIntegerToken(ifstream &file) {
     //cout << "\nINT: " << NT << "\n";
 }
 
+/**
+ * Check if the char is an operator.
+ */
 bool isOperator(char c) {
     if (strchr(operatorArray, c))
         return true;
@@ -127,6 +151,9 @@ bool isOperator(char c) {
         return false;
 }
 
+/**
+ * Check if the char is a punctuation.
+ */
 bool isPunctuation(char c) {
     if (strchr(punctuationArray, c))
         return true;
@@ -134,6 +161,9 @@ bool isPunctuation(char c) {
         return false;
 }
 
+/**
+ * Read a punctuation token into NT.
+ */
 void readPunctuationChar(ifstream &file) {
     if (checkIfEOF(file)) {
         cout << "\n\nEOF reached unexpectedly without correct parsing through grammar! Will die now!!\n\n";
@@ -149,6 +179,9 @@ void readPunctuationChar(ifstream &file) {
     //cout << "\nPunc: " << NT << "\n";
 }
 
+/**
+ * Check if the char is allowed in a string.
+ */
 bool isStringAllowedChar(char c) {
     if (strchr(stringAllowedCharArray, c) || isdigit(c) || isalpha(c) || isOperator(c))
         return true;
@@ -156,6 +189,9 @@ bool isStringAllowedChar(char c) {
         return false;
 }
 
+/**
+ * Check if the char is an escape character.
+ */
 bool isEscapeCharInString(ifstream &file, char &peek) {
     char x; //get the next character in stream in this
     //peek and store the next character in stream in this
@@ -178,6 +214,9 @@ bool isEscapeCharInString(ifstream &file, char &peek) {
         return false;
 }
 
+/**
+ * Read a string token into NT.
+ */
 void readStringToken(ifstream &file) {
     if (checkIfEOF(file)) {
         cout << "\n\nEOF reached unexpectedly without correct parsing through grammar! Will die now!!\n\n";
@@ -210,6 +249,9 @@ void readStringToken(ifstream &file) {
     //cout << "\nString: " << NT << "\n";
 }
 
+/**
+ * Read an operator token into NT.
+ */
 void readOperatorToken(ifstream &file) {
     if (checkIfEOF(file)) {
         cout << "\n\nEOF reached unexpectedly without correct parsing through grammar! Will die now!!\n\n";
@@ -228,6 +270,10 @@ void readOperatorToken(ifstream &file) {
 
 void scan(ifstream &file);
 
+/*
+ * Check and resolve if the next token sequence is of a comment ("//") ,
+ * or if it's an operator ("/").
+ */
 void resolveIfCommentOrOperator(ifstream &file) {
     char x;
     file.get(x); //Move past the first '/'
@@ -255,6 +301,9 @@ void D(ifstream &file);
 
 void readToken(ifstream &file, string token);
 
+/*
+ * The procedure for the Vl non-terminal.
+ */
 int Vl(ifstream &file, int identifiersReadBefore, bool isRecursiveCall) {
     //cout << "\nVl!";
     buildTree("<ID:" + NT + ">", 0);
@@ -273,6 +322,9 @@ int Vl(ifstream &file, int identifiersReadBefore, bool isRecursiveCall) {
     return identifiersReadBefore;
 }
 
+/*
+ * The procedure for the Vb non-terminal.
+ */
 void Vb(ifstream &file) {
     //cout << "\nVb!";
     if (NT.compare("(") == 0) {
@@ -293,6 +345,9 @@ void Vb(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Db non-terminal.
+ */
 void Db(ifstream &file) {
     //cout << "\nDb!";
     if (NT.compare("(") == 0) {
@@ -328,6 +383,9 @@ void Db(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Dr non-terminal.
+ */
 void Dr(ifstream &file) {
     //cout << "\nDr!";
     int isRec = false;
@@ -343,6 +401,9 @@ void Dr(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Da non-terminal.
+ */
 void Da(ifstream &file) {
     //cout << "\nDa!";
     Dr(file);
@@ -354,10 +415,13 @@ void Da(ifstream &file) {
     }
     if (n > 1) {
         //cout << "\nBefore calling buildTree in Da\n";
-        buildTree("and", n); //TODO: might break. does '+' imply we need to put all children under a single node?
+        buildTree("and", n);
     }
 }
 
+/*
+ * The procedure for the D non-terminal.
+ */
 void D(ifstream &file) {
     //cout << "\nD!";
     Da(file);
@@ -368,6 +432,9 @@ void D(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Rn non-terminal.
+ */
 void Rn(ifstream &file) {
     //cout << "\nRn!";
     if (nextTokenType.compare(IDENTIFIER_TOKEN) == 0) {
@@ -393,6 +460,9 @@ void Rn(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the R non-terminal.
+ */
 void R(ifstream &file) {
     //cout << "\nR!";
     Rn(file);
@@ -404,6 +474,9 @@ void R(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Ap non-terminal.
+ */
 void Ap(ifstream &file) {
     //cout << "\nAp!";
     R(file);
@@ -417,6 +490,9 @@ void Ap(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Af non-terminal.
+ */
 void Af(ifstream &file) {
     //cout << "\nAf!";
     Ap(file);
@@ -427,6 +503,9 @@ void Af(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the At non-terminal.
+ */
 void At(ifstream &file) {
     //cout << "\nAt!";
     Af(file);
@@ -438,6 +517,9 @@ void At(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the A non-terminal.
+ */
 void A(ifstream &file) {
     //cout << "\nA!";
     if (NT.compare("+") == 0) {
@@ -458,6 +540,9 @@ void A(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Bp non-terminal.
+ */
 void Bp(ifstream &file) {
     //cout << "\nBp!";
     A(file);
@@ -488,6 +573,9 @@ void Bp(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Bs non-terminal.
+ */
 void Bs(ifstream &file) {
     //cout << "\nBs!";
     bool isNeg = false;
@@ -501,6 +589,9 @@ void Bs(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Bt non-terminal.
+ */
 void Bt(ifstream &file) {
     //cout << "\nBt!";
     Bs(file);
@@ -515,6 +606,9 @@ void Bt(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the B non-terminal.
+ */
 void B(ifstream &file) {
     //cout << "\nB!";
     Bt(file);
@@ -529,6 +623,9 @@ void B(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Tc non-terminal.
+ */
 void Tc(ifstream &file) {
     //cout << "\nTc!";
     B(file);
@@ -542,6 +639,9 @@ void Tc(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Ta non-terminal.
+ */
 void Ta(ifstream &file) {
     //cout << "\nTa!";
     Tc(file);
@@ -552,6 +652,9 @@ void Ta(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the T non-terminal.
+ */
 void T(ifstream &file) {
     //cout << "\nT!";
     Ta(file);
@@ -566,6 +669,9 @@ void T(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the Ew non-terminal.
+ */
 void Ew(ifstream &file) {
     //cout << "\nEw!";
     T(file);
@@ -577,6 +683,9 @@ void Ew(ifstream &file) {
     }
 }
 
+/*
+ * The procedure for the E non-terminal.
+ */
 void E(ifstream &file) {
     //cout << "\nE!";
     int N = 0;
@@ -601,6 +710,9 @@ void E(ifstream &file) {
 
 }
 
+/*
+ * Read the next token sequence into NT.
+ */
 void scan(ifstream &file) {
     if (checkIfEOF(file)) {
         //cout << "\n\nEOF reached !\n\n";
@@ -633,6 +745,9 @@ void scan(ifstream &file) {
     }
 }
 
+/*
+ * Print the nodes of the tree in an in-order fashion.
+ */
 void recursivelyPrintTree(Node *node, string indentDots) {
     cout << indentDots + node->label << "\n";
     if (node->firstKid != NULL) {
@@ -643,6 +758,11 @@ void recursivelyPrintTree(Node *node, string indentDots) {
     }
 }
 
+/*
+ * Function to pop the (only) node
+ * from the stack of trees and print the nodes of the tree
+ * in an in-order fashion.
+ */
 void printTree() {
     //cout << "\n\nGoing to print the tree now!\n\n";
     while (!trees.empty()) {
@@ -653,6 +773,11 @@ void printTree() {
     }
 }
 
+/*
+ * Function to consume the next token from input with the next
+ * expected token by the RPAL grammar and move ahead to read the
+ * next token from input.
+ */
 void readToken(ifstream &file, string token) {
     if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
         cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
