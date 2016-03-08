@@ -309,6 +309,11 @@ void Db(ifstream &file) {
             E(file);
             //cout << "\nBefore calling buildTree in Db\n";
             buildTree("=", 2);
+        } else if (NT.compare("=") == 0) {
+            readToken(file, "=");
+            E(file);
+            //cout << "\nBefore calling buildTree in Db1\n";
+            buildTree("=", 2);
         } else {
             int n = 1;
             while (nextTokenType.compare(IDENTIFIER_TOKEN) == 0 || NT.compare("(") == 0) {
