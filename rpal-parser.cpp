@@ -376,7 +376,7 @@ void Rn(ifstream &file) {
         readToken(file, IDENTIFIER_TOKEN);
     } else if (nextTokenType.compare(STRING_TOKEN) == 0) {
         //cout << "\n\nbuildTreeNode STR:" + NT + "\n\n";
-        buildTree("<STR:" + NT + ">", 0);
+        buildTree("<STR:'" + NT + "'>", 0);
         readToken(file, STRING_TOKEN);
     } else if (nextTokenType.compare(INTEGER_TOKEN) == 0) {
         //cout << "\n\nbuildTreeNode INT:" + NT + "\n\n";
@@ -410,7 +410,8 @@ void Ap(ifstream &file) {
     while (NT.compare("@") ==
            0) {
         readToken(file, "@");
-        readToken(file, IDENTIFIER_TOKEN); //TODO: should we add a buildTree here of ID?
+        buildTree("<ID:" + NT + ">", 0); //the operator which is being inFixed, for example 'Conc'.
+        readToken(file, IDENTIFIER_TOKEN);
         R(file);
         buildTree("@", 3);
     }
