@@ -376,7 +376,7 @@ void Rn(ifstream &file) {
         readToken(file, IDENTIFIER_TOKEN);
     } else if (nextTokenType.compare(STRING_TOKEN) == 0) {
         //cout << "\n\nbuildTreeNode STR:" + NT + "\n\n";
-        buildTree("<STR:'" + NT + "'>", 0);
+        buildTree("<STR:" + NT + ">", 0);
         readToken(file, STRING_TOKEN);
     } else if (nextTokenType.compare(INTEGER_TOKEN) == 0) {
         //cout << "\n\nbuildTreeNode INT:" + NT + "\n\n";
