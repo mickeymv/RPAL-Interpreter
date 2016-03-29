@@ -762,7 +762,7 @@ void recursivelyPrintTree(Node *node, string indentDots) {
 }
 
 void convertFunctionForm(Node *functionFormNode) {
-    cout<<"\nInside function form conversion!\nFunction form is:\n";
+    //cout<<"\nInside function form conversion!\nFunction form is:\n";
     recursivelyPrintTree(functionFormNode, "");
     Node *fcnLambdaRightChildNodeHeader = new Node; //the "lambda" right child node header of the final standardized sub-tree
     fcnLambdaRightChildNodeHeader->label = LAMBDA_STD_LABEL;
@@ -793,20 +793,38 @@ void convertFunctionForm(Node *functionFormNode) {
         fcnVariableList.pop_front();
     }
     //lambdaTemp->firstKid->nextSibling = temp;
-    cout<<"\nInside function form conversion!\nThe standardized Function form is:\n";
+    //cout<<"\nInside function form conversion!\nThe standardized Function form is:\n";
     recursivelyPrintTree(functionFormNode, "");
 }
 
 void convertUop(Node *uopNode) {
-    cout<<"\nInside uop conversion!\nuop ast form before standardizing is:\n";
-    recursivelyPrintTree(uopNode, "");
+    //cout<<"\nInside uop conversion!\nuop ast form before standardizing is:\n";
+    //recursivelyPrintTree(uopNode, "");
     Node *uopLeftChild = new Node;
     uopLeftChild->label = uopNode->label;
     uopLeftChild->nextSibling = uopNode->firstKid;
     uopNode->label = GAMMA_STD_LABEL;
     uopNode->firstKid = uopLeftChild;
-    cout<<"\nThe standardized uop is:\n";
-    recursivelyPrintTree(uopNode, "");
+    //cout<<"\nThe standardized uop is:\n";
+    //recursivelyPrintTree(uopNode, "");
+}
+
+void convertOperator(Node *opNode) {
+    //cout<<"\nInside Operator conversion!\nOp ast form before standardizing is:\n";
+    //recursivelyPrintTree(opNode, "");
+    Node *leftGammaChild = new Node;
+    Node *leftLeftOperatorChild = new Node;
+    leftLeftOperatorChild->label = opNode->label;
+    leftLeftOperatorChild->firstKid = NULL;
+    leftLeftOperatorChild->nextSibling = opNode->firstKid; //E1
+    leftGammaChild->label = GAMMA_STD_LABEL;
+    leftGammaChild->firstKid = leftLeftOperatorChild;
+    leftGammaChild->nextSibling = opNode->firstKid->nextSibling; //E2
+    opNode->firstKid->nextSibling = NULL;
+    opNode->firstKid = leftGammaChild;
+    opNode->label = GAMMA_STD_LABEL;
+    //cout<<"\nThe standardized operator is:\n";
+    //recursivelyPrintTree(opNode, "");
 }
 
 /*
@@ -819,10 +837,15 @@ void recursivelyStandardizeTree(Node *node) {
     if (node->nextSibling != NULL) {
         recursivelyStandardizeTree(node->nextSibling);
     }
-    if (node->label == FCN_FORM_LABEL) {
+    if (node->label == FCN_FORM_LABEL) {    //convert function_form to standardized form
         convertFunctionForm(node);
     } else if (node->label == "not" || node->label == "neg") { //convert unary operators to standardized form
         convertUop(node);
+    } else if (node->label == "aug" || node->label == "or" || node->label == "&" || node->label == "gr" ||
+               node->label == "ge" || node->label == "ls" || node->label == "le" || node->label == "eq" ||
+               node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
+               node->label == "/" || node->label == "**") {
+        convertOperator(node);
     }
 }
 
@@ -944,10 +967,10 @@ int main(int argc, char *argv[]) {
                 if (checkIfEOF(the_file)) {
 //                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
 //                    exit(1);
-                    cout<<"\nThe AST is:\n";
+                    cout << "\nThe AST is:\n";
                     printTree(); //print the AST
                     convertASTToStandardizedTree();
-                    cout<<"\nThe standardized ST is:\n";
+                    cout << "\nThe standardized ST is:\n";
                     printTree(); //print the standardized tree
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
