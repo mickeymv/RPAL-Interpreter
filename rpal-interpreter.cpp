@@ -1,9 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <stack>
-
-#include <cstdlib>
-#include <cstring>
+#include <list>
 
 using namespace std;
 
@@ -15,7 +13,7 @@ using namespace std;
  *
  * COP 5556 Spring 2016
  *
- * Project 1: RPal Parser
+ * Project 2: RPal Interpreter (Built upon Project 1: RPal Parser)
  *
  */
 
@@ -27,6 +25,11 @@ const string OPERATOR_TOKEN = "OPERATOR";
 const string KEYWORD_TOKEN = "KEYWORD";
 const string UNDEFINED_TOKEN = "UNDEFINED";
 const string PUNCTUATION_TOKEN = "PUNCTUATION";
+
+const string FCN_FORM_LABEL = "function_form";
+
+const string GAMMA_STD_LABEL = "std:Gamma";
+const string LAMBDA_STD_LABEL = "std:Lambda";
 
 const char *operatorArray = "+-*<>&.@/:=~|$!#!^_[]{}\"`?";
 
@@ -378,7 +381,7 @@ void Db(ifstream &file) {
             readToken(file, "=");
             E(file);
             //cout << "\nBefore calling buildTree in Db2\n";
-            buildTree("function_form", n + 1); //n + 'E'
+            buildTree(FCN_FORM_LABEL, n + 1); //n + 'E'
         }
     }
 }
@@ -746,7 +749,7 @@ void scan(ifstream &file) {
 }
 
 /*
- * Print the nodes of the tree in an in-order fashion.
+ * Print the nodes of the tree in a pre-order fashion.
  */
 void recursivelyPrintTree(Node *node, string indentDots) {
     cout << indentDots + node->label << "\n";
@@ -758,18 +761,79 @@ void recursivelyPrintTree(Node *node, string indentDots) {
     }
 }
 
+void convertFunctionForm(Node *functionFormNode) {
+    Node *fcnLambdaRightChildNodeHeader = new Node; //the "lambda" right child node header of the final standardized sub-tree
+    fcnLambdaRightChildNodeHeader->label = LAMBDA_STD_LABEL;
+    fcnLambdaRightChildNodeHeader->nextSibling = NULL;
+
+    list<Node *> fcnVariableList;
+    functionFormNode->label = "=";  //the "=" header node of the final standardized sub-tree
+
+    Node *temp = functionFormNode->firstKid;    //the fcn label left child node of the final standardized sub-tree
+    while (temp->nextSibling->nextSibling !=
+           NULL) { //temp->nextSibling->nextSibling == NULL implies temp->nextSibling is the "Expression" part of the fcnForm
+        temp = temp->nextSibling;
+        fcnVariableList.push_back(temp);
+    }
+    //temp = temp->nextSibling; //this would be the expression part of the fcn form //the final expression node which is the rightMost child of the right sub-tree
+
+    functionFormNode->firstKid->nextSibling = fcnLambdaRightChildNodeHeader;
+    fcnLambdaRightChildNodeHeader->nextSibling = NULL;
+    fcnLambdaRightChildNodeHeader->firstKid = fcnVariableList.front();
+    Node *lambdaTemp = fcnLambdaRightChildNodeHeader;
+    fcnVariableList.pop_front();
+    while (fcnVariableList.size() > 0) {
+        Node *newLambdaRightNode = new Node;
+        lambdaTemp->firstKid->nextSibling = newLambdaRightNode;
+        newLambdaRightNode->nextSibling = NULL;
+        lambdaTemp = newLambdaRightNode;
+        lambdaTemp->firstKid = fcnVariableList.front();
+        fcnVariableList.pop_front();
+    }
+    //lambdaTemp->firstKid->nextSibling = temp;
+}
+
+/*
+ * Standardize the nodes of the tree in a pre-order fashion.
+ */
+void recursivelyStandardizeTree(Node *node) {
+    if (node->label == FCN_FORM_LABEL) {
+        convertFunctionForm(node);
+    }
+    if (node->firstKid != NULL) {
+        recursivelyStandardizeTree(node->firstKid);
+    }
+    if (node->nextSibling != NULL) {
+        recursivelyStandardizeTree(node->nextSibling);
+    }
+}
+
 /*
  * Function to pop the (only) node
  * from the stack of trees and print the nodes of the tree
- * in an in-order fashion.
+ * in a pre-order fashion.
  */
 void printTree() {
     //cout << "\n\nGoing to print the tree now!\n\n";
-    while (!trees.empty()) {
+    if (!trees.empty()) {
         //cout << "\n\nThis is supposed to be the only tree below!\n";
-        Node *treeNode = trees.top();
-        recursivelyPrintTree(treeNode, "");
-        trees.pop();
+        Node *treeRootOfAST = trees.top();
+        recursivelyPrintTree(treeRootOfAST, "");
+    }
+}
+
+/*
+ * Function to pop the (only) node
+ * from the stack of trees and convert the nodes of the tree
+ * to a standardized tree (tree whose internal nodes are only gammas or lambdas)
+ * in a pre-order fashion.
+ */
+void convertASTToStandardizedTree() {
+    cout << "\n\nGoing to standardize the tree now!\n\n";
+    if (!trees.empty()) {
+        //cout << "\n\nThis is supposed to be the only tree below!\n";
+        Node *treeRootOfAST = trees.top();
+        recursivelyStandardizeTree(treeRootOfAST);
     }
 }
 
@@ -803,6 +867,7 @@ int main(int argc, char *argv[]) {
                 cout << "\n\nCould not open file: '" << argv[2] << "'" << "\n\n";
             else {
                 if (strcmp(argv[1], "-l") == 0) { //Print input? (//Listing of input?)
+                    /* Optional switches: -l This produces a listing of the input. */
                     cout << "\n\n";
                     char x;
                     // the_file.get ( x ) returns false if the end of the file
@@ -812,6 +877,11 @@ int main(int argc, char *argv[]) {
                     // the_file is closed implicitly here
                     cout << "\n\n";
                 } else if (strcmp(argv[1], "-ast") == 0) {
+                    /*
+                     * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
+                     * No headers or footers.
+                     * The AST must match exactly, character for character, the AST produced by rpal.
+                     */
                     //Call ast generator
                     //Call parser
                     //cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
@@ -823,6 +893,7 @@ int main(int argc, char *argv[]) {
 //                    exit(1);
                         //cout << "\n\nAST Tree should print!\n\n";
                         printTree();
+
                     } else {
                         cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                         exit(0);
@@ -840,6 +911,7 @@ int main(int argc, char *argv[]) {
             cout << argv[0] << " -l <filename>\n\n";
         }
         else {
+            /* p2 (without switches) should produce the result of the program. */
             // We assume argv[2] is a filename to open
             ifstream the_file(argv[1]);
             // Always check to see if file opening succeeded
@@ -854,6 +926,9 @@ int main(int argc, char *argv[]) {
                 if (checkIfEOF(the_file)) {
 //                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
 //                    exit(1);
+                    printTree(); //print the AST
+                    convertASTToStandardizedTree();
+                    printTree(); //print the standardized tree
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
@@ -863,11 +938,10 @@ int main(int argc, char *argv[]) {
     }
     else if (argc != 2) {
         /*
-         * p1 (without switches) should produce no output whatsoever.
-            Required switches: -ast This switch prints the abstract syntax tree, and nothing else. No headers or footers.
-         The AST must match exactly, character for character, the AST produced by rpal.
-
-            Optional switches: -l This produces a listing of the input.
+         * p2 (without switches) should produce the result of the program.
+         * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
+         * No headers or footers. The AST must match exactly, character for character, the AST produced by rpal.
+         * Optional switches: -l This produces a listing of the input.
          */
         cout << "\n\nUsages:\n" << argv[0] << " <filename>\n";
         cout << argv[0] << " -ast <filename>\n";

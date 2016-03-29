@@ -1,4 +1,4 @@
 all:
-	gcc rpal-parser.cpp -o p1 -lstdc++
+	gcc rpal-interpreter.cpp -o p2 -lstdc++
 cl:
-	rm -f *.o p1
+	rm -f *.o p2

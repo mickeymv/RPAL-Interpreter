@@ -1,0 +1,78 @@
+Project 1: RPal Parser
+
+University of Florida
+
+COP 5556 Spring 2016
+
+
+Remember:
+
+Have your name and UF ID on what you submit
+Submit everything in a single jar or zip file.
+Goals:
+
+The objective of this first project is to implement a lexical analyzer, and a recursive descent parser for the RPAL language. The grammar for RPAL appears in your class notes.
+
+You must write your OWN lexical and syntax analyzers in C++. You are NOT allowed to use 'lex' and 'yacc' or any similar software in order to implement this project.
+
+For lexical analysis, a brief description will be made in class. There are many good textbooks that describe how to construct them. In essence, a lexical analyzer is a Finite-State Automaton. The lexcial rules for RPAL appear in the class notes.
+
+The syntax for the RPAL language is defined in the language notes.
+
+Regarding grading and submission
+
+Put in a BUGS file all comments of known errors (if any) of your project. It is MUCH better for you to list the limitations of your software than to let us discover them. The more time it takes for us to find what's wrong with your program, the larger the portion of credit you will lose. In short, you must make it easy for us to examine your program.
+Your output should match the corresponding tree for each one of the test programs. Please bear with the idiosyncracies of my parser, and match its behavior anyway.
+Grading strategy: To grade your project, we will run your program on each of the test programs, and we will compare (bit by bit, electronically, of course) your AST with the correct one. Full credit will be given a perfect match in every case. Credit will be lost for failing to follow the above instructions. Readability and clarity of the source code is also important for your grade.
+Executable Name: p1. Include a make file in your submission.
+You must provide a makefile to build this project. We will compile your program by invoking: make
+
+we will then test p1 by invoking it as follows:
+
+p1 testprog1
+
+p1 testprog2
+
+..
+
+Notice that the input is NOT standard input (stdin), but instead a command-line parameter.
+
+Examples:
+
+p1 -debug /cis/homes/manuel/systems/pal/tests.rpal/trees
+
+p1 -ast /cis/homes/manuel/systems/pal/tests.rpal/Treepicture
+
+p1 (without switches) should produce no output whatsoever.
+Required switches: -ast This switch prints the abstract syntax tree, and nothing else. No headers or footers. The AST must match exactly, character for character, the AST produced by rpal.
+
+Optional switches: -l This produces a listing of the input.
+
+It must be possible to run p1 from ANY directory: ~user/cop5556/p1 testfile
+It must run correctly on storm.cise.ufl.edu. You can ssh into storm and test your project there. If you have questions about storm or your cise account, refer to this website: http://www.cise.ufl.edu/help/
+Note: you cannot require any changes to the test files for your program to run. The files will be used as is. In the past, students have tried to specify, things like "no blank lines" or "every token must be separated by spaces". This represents a change to the rpal specifications and so is not acceptable. If your program does not correctly parse the given test files as is, it doesn't work.
+The makefile for your project should be very simple:
+--------------------------------------------------------
+all:
+    gcc rpal-parser.cc -o p1
+cl:
+    rm -f *.o p1
+--------------------------------------------------------
+To compile: type "make"
+To clean up: type "make cl"
+Make and clear must work or your project will be considered to be broken.
+TESTING YOUR PROJECT
+This file, difftest.pl, can be used to test your project. 
+
+The input will be something like: 
+./difftest.pl -1 "./rpal -ast -noout add" -2 “./p1 -ast add" -t ~/rpal/tests/
+perl difftest.pl -1 "./rpal -ast -noout add" -2 “./p1 -ast add" -t ~/Desktop/plp/Project1/tests/
+
+perl difftest.pl -1 "./rpal -ast -noout FILE" -2 "./p1 -ast FILE" -t ~/rpal/tests/
+ 
+
+Electronically submit a single "tar" file using Canvas. The deadline for this project is Friday, March 11 at 11:55 pm. Make sure you submit before the due date, as Canvas will automatically cut off submissions at midnight. Late submissions will not be accepted. Any questions about the homework or Canvas, email the TA.  
+
+Your code will be checked for plagiarism and those found using current or previous semester's code, will be referred to the student honor court.  
+
+ 
