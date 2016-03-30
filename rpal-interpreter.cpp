@@ -809,21 +809,38 @@ void convertUop(Node *uopNode) {
     //recursivelyPrintTree(uopNode, "");
 }
 
-void convertOperator(Node *opNode) {
+void convertOperator(Node *binaryOperatorNode) {
     //cout<<"\nInside Operator conversion!\nOp ast form before standardizing is:\n";
     //recursivelyPrintTree(opNode, "");
     Node *leftGammaChild = new Node;
     Node *leftLeftOperatorChild = new Node;
-    leftLeftOperatorChild->label = opNode->label;
+    leftLeftOperatorChild->label = binaryOperatorNode->label;
     leftLeftOperatorChild->firstKid = NULL;
-    leftLeftOperatorChild->nextSibling = opNode->firstKid; //E1
+    leftLeftOperatorChild->nextSibling = binaryOperatorNode->firstKid; //E1
     leftGammaChild->label = GAMMA_STD_LABEL;
     leftGammaChild->firstKid = leftLeftOperatorChild;
-    leftGammaChild->nextSibling = opNode->firstKid->nextSibling; //E2
-    opNode->firstKid->nextSibling = NULL;
-    opNode->firstKid = leftGammaChild;
-    opNode->label = GAMMA_STD_LABEL;
+    leftGammaChild->nextSibling = binaryOperatorNode->firstKid->nextSibling; //E2
+    binaryOperatorNode->firstKid->nextSibling = NULL;
+    binaryOperatorNode->firstKid = leftGammaChild;
+    binaryOperatorNode->label = GAMMA_STD_LABEL;
     //cout<<"\nThe standardized operator is:\n";
+    //recursivelyPrintTree(opNode, "");
+}
+
+void convertInfixOperator(Node *infixOperatorNode) {
+    //cout<<"\nInside Infix Operator conversion!\nInfix ast form before standardizing is:\n";
+    //recursivelyPrintTree(opNode, "");
+    Node *leftGammaChild = new Node;
+    Node *leftLeftOperatorChild = new Node;
+    leftLeftOperatorChild->label = infixOperatorNode->firstKid->nextSibling->label;
+    leftLeftOperatorChild->nextSibling = infixOperatorNode->firstKid; //E1
+    leftGammaChild->label = GAMMA_STD_LABEL;
+    leftGammaChild->firstKid = leftLeftOperatorChild;
+    leftGammaChild->nextSibling = infixOperatorNode->firstKid->nextSibling->nextSibling; //E2
+    infixOperatorNode->firstKid->nextSibling = NULL;
+    infixOperatorNode->firstKid = leftGammaChild;
+    infixOperatorNode->label = GAMMA_STD_LABEL;
+    //cout<<"\nThe standardized Infix operator is:\n";
     //recursivelyPrintTree(opNode, "");
 }
 
@@ -846,6 +863,8 @@ void recursivelyStandardizeTree(Node *node) {
                node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
                node->label == "/" || node->label == "**") {
         convertOperator(node);
+    } else if (node->label == "@") {    //convert infix operator to standardized form
+        convertInfixOperator(node);
     }
 }
 
