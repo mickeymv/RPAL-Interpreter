@@ -763,7 +763,7 @@ void recursivelyPrintTree(Node *node, string indentDots) {
 
 void convertFunctionForm(Node *functionFormNode) {
     //cout<<"\nInside function form conversion!\nFunction form is:\n";
-    recursivelyPrintTree(functionFormNode, "");
+    //recursivelyPrintTree(functionFormNode, "");
     Node *fcnLambdaRightChildNodeHeader = new Node; //the "lambda" right child node header of the final standardized sub-tree
     fcnLambdaRightChildNodeHeader->label = LAMBDA_STD_LABEL;
     fcnLambdaRightChildNodeHeader->nextSibling = NULL;
@@ -844,6 +844,36 @@ void convertInfixOperator(Node *infixOperatorNode) {
     //recursivelyPrintTree(opNode, "");
 }
 
+void convertLambdaExpression(Node *lambdaNode) {
+    //cout<<"\nInside lambda expression conversion!\nlambda expression ast form before standardizing is:\n";
+    //recursivelyPrintTree(lambdaNode, "");
+    lambdaNode->label = LAMBDA_STD_LABEL;
+
+    list<Node *> fcnVariableList;
+
+    Node *temp = lambdaNode->firstKid;    //the top left child node of the final standardized lambda sub-tree
+    while (temp->nextSibling->nextSibling !=
+           NULL) { //temp->nextSibling->nextSibling == NULL implies temp->nextSibling is the "Expression" part of the fcnForm
+        temp = temp->nextSibling;
+        fcnVariableList.push_back(temp);
+    }
+    temp = temp->nextSibling; //this would be the expression part of the fcn form //the final expression node which is the rightMost child of the right sub-tree
+
+    Node *lambdaTemp = lambdaNode;
+    while (fcnVariableList.size() > 0) {
+        Node *newLambdaRightNode = new Node;
+        lambdaTemp->firstKid->nextSibling = newLambdaRightNode;
+        newLambdaRightNode->nextSibling = NULL;
+        newLambdaRightNode->label = LAMBDA_STD_LABEL;
+        lambdaTemp = newLambdaRightNode;
+        lambdaTemp->firstKid = fcnVariableList.front();
+        fcnVariableList.pop_front();
+    }
+    lambdaTemp->firstKid->nextSibling = temp; // E
+    //cout<<"\nThe standardized lambda expression is:\n";
+    //recursivelyPrintTree(lambdaNode, "");
+}
+
 /*
  * Standardize the nodes of the tree in a pre-order fashion.
  */
@@ -865,6 +895,12 @@ void recursivelyStandardizeTree(Node *node) {
         convertOperator(node);
     } else if (node->label == "@") {    //convert infix operator to standardized form
         convertInfixOperator(node);
+    } else if (node->label == "lambda") {    //convert lambda expression to standardized form
+        if (node->firstKid->label == ",") { //lambda expression with a tuple of variables
+
+        } else {    //lambda expression with a list(?) of variable(s)
+            convertLambdaExpression(node);
+        }
     }
 }
 
