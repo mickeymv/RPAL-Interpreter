@@ -797,6 +797,7 @@ void convertFunctionForm(Node *functionFormNode) {
     recursivelyPrintTree(functionFormNode, "");
 }
 
+/* DO not optimize the unary and binary operators (optimizations for the CISE machine)
 void convertUop(Node *uopNode) {
     //cout<<"\nInside uop conversion!\nuop ast form before standardizing is:\n";
     //recursivelyPrintTree(uopNode, "");
@@ -826,6 +827,7 @@ void convertOperator(Node *binaryOperatorNode) {
     //cout<<"\nThe standardized operator is:\n";
     //recursivelyPrintTree(opNode, "");
 }
+ */
 
 void convertInfixOperator(Node *infixOperatorNode) {
     //cout<<"\nInside Infix Operator conversion!\nInfix ast form before standardizing is:\n";
@@ -874,6 +876,52 @@ void convertLambdaExpression(Node *lambdaNode) {
     //recursivelyPrintTree(lambdaNode, "");
 }
 
+void convertAndExpression(Node *andHeaderNode) {
+    andHeaderNode->label = "=";
+    Node *tempEqualsChildHeaderNode = andHeaderNode->firstKid;
+    list<Node *> variableNodesList;
+    list<Node *> expressionNodesList;
+    while (tempEqualsChildHeaderNode != NULL) {
+        variableNodesList.push_back(tempEqualsChildHeaderNode->firstKid);
+        expressionNodesList.push_back(tempEqualsChildHeaderNode->firstKid->nextSibling);
+        tempEqualsChildHeaderNode = tempEqualsChildHeaderNode->nextSibling;
+    }
+
+    Node* commaHeaderNode = new Node;
+    Node* tauHeaderNode = new Node;
+
+    commaHeaderNode->label = ",";
+    tauHeaderNode->label = "tau";
+    tauHeaderNode->nextSibling = NULL;
+    commaHeaderNode->nextSibling = tauHeaderNode;
+
+    andHeaderNode->firstKid = commaHeaderNode;
+
+    Node* commaVariableTempNode, *tauExpressionTempNode;
+
+    commaVariableTempNode = variableNodesList.front();
+    variableNodesList.pop_front();
+    tauExpressionTempNode = expressionNodesList.front();
+    expressionNodesList.pop_front();
+
+    commaHeaderNode->firstKid = commaVariableTempNode;
+
+    tauHeaderNode->firstKid = tauExpressionTempNode;
+
+    while (!variableNodesList.empty()) {
+        commaVariableTempNode->nextSibling = variableNodesList.front();
+        variableNodesList.pop_front();
+        tauExpressionTempNode->nextSibling = expressionNodesList.front();
+        expressionNodesList.pop_front();
+        commaVariableTempNode = commaVariableTempNode->nextSibling;
+        tauExpressionTempNode = tauExpressionTempNode->nextSibling;
+    }
+
+    commaVariableTempNode->nextSibling = NULL;
+    tauExpressionTempNode->nextSibling = NULL;
+
+}
+
 /*
  * Standardize the nodes of the tree in a pre-order fashion.
  */
@@ -887,20 +935,22 @@ void recursivelyStandardizeTree(Node *node) {
     if (node->label == FCN_FORM_LABEL) {    //convert function_form to standardized form
         convertFunctionForm(node);
     } else if (node->label == "not" || node->label == "neg") { //convert unary operators to standardized form
-        convertUop(node);
+        //Do not standardize (optimizations for the CISE machine) //convertUop(node);
     } else if (node->label == "aug" || node->label == "or" || node->label == "&" || node->label == "gr" ||
                node->label == "ge" || node->label == "ls" || node->label == "le" || node->label == "eq" ||
                node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
                node->label == "/" || node->label == "**") {
-        convertOperator(node);
+        //Do not standardize (optimizations for the CISE machine) //convertOperator(node);
     } else if (node->label == "@") {    //convert infix operator to standardized form
         convertInfixOperator(node);
     } else if (node->label == "lambda") {    //convert lambda expression to standardized form
         if (node->firstKid->label == ",") { //lambda expression with a tuple of variables
-
+            //Do not standardize (optimizations for the CISE machine)
         } else {    //lambda expression with a list(?) of variable(s)
             convertLambdaExpression(node);
         }
+    } else if (node->label == "and") {
+        convertAndExpression(node);
     }
 }
 
