@@ -938,6 +938,25 @@ void convertLetExpression(Node *letNode) {
 
 }
 
+void convertWhereExpression(Node *whereNode) {
+    whereNode->label = GAMMA_STD_LABEL;
+
+
+    Node *pNode = whereNode->firstKid;
+    Node* leftChildLambdaNode = pNode->nextSibling;
+    leftChildLambdaNode->label = LAMBDA_STD_LABEL;
+    Node *eNode = leftChildLambdaNode->firstKid->nextSibling;
+
+    whereNode->firstKid = leftChildLambdaNode;
+
+    //switch the p and e nodes
+
+    leftChildLambdaNode->nextSibling = eNode;
+    leftChildLambdaNode->firstKid->nextSibling = pNode;
+
+    pNode->nextSibling = NULL;
+}
+
 void convertWithinExpression(Node *withinNode) {
     withinNode->label = "=";
 
@@ -972,6 +991,8 @@ void recursivelyStandardizeTree(Node *node) {
     }
     if (node->label == "let") {
         convertLetExpression(node);
+    } else if (node->label == "where") {
+        convertWhereExpression(node);
     } else if (node->label == "->") {
         //Do not standardize conditionals (optimizations for the CISE machine)
     } else if (node->label == "not" || node->label == "neg") { //convert unary operators to standardized form
