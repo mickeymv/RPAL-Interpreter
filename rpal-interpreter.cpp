@@ -748,22 +748,45 @@ void scan(ifstream &file) {
     }
 }
 
+
+
 /*
  * Print the nodes of the tree in a pre-order fashion.
  */
 void recursivelyPrintTree(Node *node, string indentDots) {
+    //cout<<"\nPrinting tree for: "<<node->label<<"\n";
     cout << indentDots + node->label << "\n";
     if (node->firstKid != NULL) {
+        //cout<<"\nPrinting firstKid tree for: "<<node->label<<"\n";
         recursivelyPrintTree(node->firstKid, indentDots + "(-.#.-)");
     }
     if (node->nextSibling != NULL) {
+        //cout<<"\nPrinting nextSibling tree for: "<<node->label<<"\n";
         recursivelyPrintTree(node->nextSibling, indentDots);
     }
+    //cout<<"\nDONE! Printing tree for: "<<node->label<<"\n";
+}
+
+/*
+ * To be called from the standardizer functions.
+ * Only prints the node and its children and not the siblings.
+ */
+void recursivelyPrintTreeNode(Node *node, string indentDots) {
+    //cout<<"\nPrinting tree for: "<<node->label<<"\n";
+    cout << indentDots + node->label << "\n";
+    if (node->firstKid != NULL) {
+        //cout<<"\nPrinting firstKid tree for: "<<node->label<<"\n";
+        recursivelyPrintTree(node->firstKid, indentDots + "(-.#.-)");
+    }
+    //cout<<"\nDONE! Printing tree for: "<<node->label<<"\n";
 }
 
 void convertFunctionForm(Node *functionFormNode) {
-    //cout<<"\nInside function form conversion!\nFunction form is:\n";
-    //recursivelyPrintTree(functionFormNode, "");
+//    cout<<"\nInside function form conversion!\nFunction form is:\n";
+//    if(functionFormNode->nextSibling != NULL) {
+//        cout<<"functionFormNode's sibling is: "<<functionFormNode->nextSibling->label<<"\n";
+//    }
+//    recursivelyPrintTreeNode(functionFormNode, "");
     Node *fcnLambdaRightChildNodeHeader = new Node; //the "lambda" right child node header of the final standardized sub-tree
     fcnLambdaRightChildNodeHeader->label = LAMBDA_STD_LABEL;
     fcnLambdaRightChildNodeHeader->nextSibling = NULL;
@@ -793,8 +816,12 @@ void convertFunctionForm(Node *functionFormNode) {
         fcnVariableList.pop_front();
     }
     //lambdaTemp->firstKid->nextSibling = temp;
-    //cout<<"\nInside function form conversion!\nThe standardized Function form is:\n";
-    recursivelyPrintTree(functionFormNode, "");
+//    cout<<"\nInside function form conversion!\nThe standardized Function form is:\n";
+//    recursivelyPrintTreeNode(functionFormNode, "");
+//
+//    if(functionFormNode->nextSibling != NULL) {
+//        cout<<"functionFormNode's sibling is: "<<functionFormNode->nextSibling->label<<"\n";
+//    }
 }
 
 /* DO not optimize the unary and binary operators (optimizations for the CISE machine)
@@ -847,8 +874,8 @@ void convertInfixOperator(Node *infixOperatorNode) {
 }
 
 void convertLambdaExpression(Node *lambdaNode) {
-    //cout<<"\nInside lambda expression conversion!\nlambda expression ast form before standardizing is:\n";
-    //recursivelyPrintTree(lambdaNode, "");
+    cout<<"\nInside lambda expression conversion!\n lambda expression ast form before standardizing is:\n";
+    recursivelyPrintTreeNode(lambdaNode, "");
     lambdaNode->label = LAMBDA_STD_LABEL;
 
     list<Node *> fcnVariableList;
@@ -872,8 +899,8 @@ void convertLambdaExpression(Node *lambdaNode) {
         fcnVariableList.pop_front();
     }
     lambdaTemp->firstKid->nextSibling = temp; // E
-    //cout<<"\nThe standardized lambda expression is:\n";
-    //recursivelyPrintTree(lambdaNode, "");
+    cout<<"\nThe standardized lambda expression is:\n";
+    recursivelyPrintTreeNode(lambdaNode, "");
 }
 
 void convertAndExpression(Node *andHeaderNode) {
@@ -923,6 +950,8 @@ void convertAndExpression(Node *andHeaderNode) {
 }
 
 void convertLetExpression(Node *letNode) {
+    cout<<"\nInside convertLetExpression conversion!\nletNode ast form before standardizing is:\n";
+    recursivelyPrintTreeNode(letNode, "");
     letNode->label = GAMMA_STD_LABEL;
 
     letNode->firstKid->label = LAMBDA_STD_LABEL;
@@ -935,30 +964,56 @@ void convertLetExpression(Node *letNode) {
     letNode->firstKid->nextSibling = eNode;
     letNode->firstKid->firstKid->nextSibling = pNode;
 
-
+    cout<<"\nInside convertLetExpression conversion!\nletNode ast form after standardizing is:\n";
+   recursivelyPrintTreeNode(letNode, "");
 }
 
 void convertRecExpression(Node *recNode) {
-    recNode = recNode->firstKid;
+//    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
+    cout<<"\nInside convertRecExpression conversion!\nrecNode ast form before standardizing is:\n";
+    recursivelyPrintTreeNode(recNode, "");
+//    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
+//
+//    if(recNode->nextSibling != NULL) {
+//        cout<<"recNode's sibling is: "<<recNode->nextSibling->label<<"\n";
+//    }
+//
+//    if(recNode->firstKid->nextSibling != NULL) {
+//        cout<<"recNode's firstKid's sibling is: "<<recNode->firstKid->nextSibling->label<<"\n";
+//    }
+
+    Node *recNodeOriginalEqualsChild = recNode->firstKid;
+
+    recNode->label = recNodeOriginalEqualsChild->label;
+    recNode->firstKid = recNodeOriginalEqualsChild->firstKid;
 
     Node *rightGammaChild = new Node;
     rightGammaChild->label = GAMMA_STD_LABEL;
     Node *rightRightLambdaChild = new Node;
     rightRightLambdaChild->label = LAMBDA_STD_LABEL;
+    rightRightLambdaChild->nextSibling = NULL;
 
     Node *leftChildYNode = new Node;
     leftChildYNode->label = "Y";
+    leftChildYNode->firstKid = NULL;
 
     rightGammaChild->firstKid = leftChildYNode;
+    rightGammaChild->nextSibling = NULL;
     leftChildYNode->nextSibling = rightRightLambdaChild;
 
     Node *functionNameNode = new Node;
     functionNameNode->label = recNode->firstKid->label;
+    functionNameNode->firstKid = NULL;
 
     rightRightLambdaChild->firstKid = functionNameNode;
     functionNameNode->nextSibling = recNode->firstKid->nextSibling; //E
 
     recNode->firstKid->nextSibling = rightGammaChild;
+
+//    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
+    cout<<"\nInside convertRecExpression conversion!\nrecNode ast form after standardizing is:\n";
+    recursivelyPrintTreeNode(recNode, "");
+//    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
 
 }
 
@@ -1028,21 +1083,30 @@ void recursivelyStandardizeTree(Node *node) {
         if (node->firstKid->label == ",") { //lambda expression with a tuple of variables
             //Do not standardize lambda with a tuple of variables (optimizations for the CISE machine)
         } else {    //lambda expression with a list(?) of variable(s)
+            cout<<"\nGoing to convertLambdaExpression\n";
             convertLambdaExpression(node);
         }
     } else if (node->label == FCN_FORM_LABEL) {    //convert function_form to standardized form
+        cout<<"\nGoing to convertFunctionForm\n";
         convertFunctionForm(node);
     } else if (node->label == "@") {    //convert infix operator to standardized form
+        cout<<"\nGoing to convertInfixOperator\n";
         convertInfixOperator(node);
     } else if (node->label == "and") {
+        cout<<"\nGoing to convertAndExpression\n";
         convertAndExpression(node);
     } else if (node->label == "within") {
+        cout<<"\nGoing to convertWithinExpression\n";
         convertWithinExpression(node);
     } else if (node->label == "rec") {
+        cout<<"\nGoing to convertRecExpression for nodeLabel= "<<node->label<<"\n";
         convertRecExpression(node);
+        cout<<"\nAfter convertRecExpression for nodeLabel= "<<node->label<<"\n";
     } else if (node->label == "let") {
+        cout<<"\nGoing to convertLetExpression\n";
         convertLetExpression(node);
     } else if (node->label == "where") {
+        cout<<"\nGoing to convertWhereExpression\n";
         convertWhereExpression(node);
     }
 }
