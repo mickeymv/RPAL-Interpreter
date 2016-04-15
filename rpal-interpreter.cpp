@@ -754,7 +754,7 @@ void scan(ifstream &file) {
 void recursivelyPrintTree(Node *node, string indentDots) {
     cout << indentDots + node->label << "\n";
     if (node->firstKid != NULL) {
-        recursivelyPrintTree(node->firstKid, indentDots + ".");
+        recursivelyPrintTree(node->firstKid, indentDots + "(-.#.-)");
     }
     if (node->nextSibling != NULL) {
         recursivelyPrintTree(node->nextSibling, indentDots);
@@ -887,8 +887,8 @@ void convertAndExpression(Node *andHeaderNode) {
         tempEqualsChildHeaderNode = tempEqualsChildHeaderNode->nextSibling;
     }
 
-    Node* commaHeaderNode = new Node;
-    Node* tauHeaderNode = new Node;
+    Node *commaHeaderNode = new Node;
+    Node *tauHeaderNode = new Node;
 
     commaHeaderNode->label = ",";
     tauHeaderNode->label = "tau";
@@ -897,7 +897,7 @@ void convertAndExpression(Node *andHeaderNode) {
 
     andHeaderNode->firstKid = commaHeaderNode;
 
-    Node* commaVariableTempNode, *tauExpressionTempNode;
+    Node *commaVariableTempNode, *tauExpressionTempNode;
 
     commaVariableTempNode = variableNodesList.front();
     variableNodesList.pop_front();
@@ -922,6 +922,44 @@ void convertAndExpression(Node *andHeaderNode) {
 
 }
 
+void convertLetExpression(Node *letNode) {
+    letNode->label = GAMMA_STD_LABEL;
+
+    letNode->firstKid->label = LAMBDA_STD_LABEL;
+
+    Node *pNode = letNode->firstKid->nextSibling;
+    Node *eNode = letNode->firstKid->firstKid->nextSibling;
+
+    //switch the p and e nodes
+
+    letNode->firstKid->nextSibling = eNode;
+    letNode->firstKid->firstKid->nextSibling = pNode;
+
+
+}
+
+void convertWithinExpression(Node *withinNode) {
+    withinNode->label = "=";
+
+    Node *withinOne = withinNode->firstKid;
+    Node *withinTwo = withinOne->nextSibling;
+
+    Node *rightGammaChild = new Node;
+    Node *rightLeftLambdaChild = new Node;
+    rightGammaChild->label = GAMMA_STD_LABEL;
+    rightLeftLambdaChild->label = LAMBDA_STD_LABEL;
+
+    rightGammaChild->firstKid = rightLeftLambdaChild;
+    rightLeftLambdaChild->nextSibling = withinOne->firstKid->nextSibling; //E1
+    rightLeftLambdaChild->firstKid = withinOne->firstKid; //X1
+    rightLeftLambdaChild->firstKid->nextSibling = withinTwo->firstKid->nextSibling; //E2
+
+    withinNode->firstKid = withinTwo->firstKid; //X2
+    withinNode->firstKid->nextSibling = rightGammaChild;
+
+
+}
+
 /*
  * Standardize the nodes of the tree in a pre-order fashion.
  */
@@ -932,25 +970,33 @@ void recursivelyStandardizeTree(Node *node) {
     if (node->nextSibling != NULL) {
         recursivelyStandardizeTree(node->nextSibling);
     }
-    if (node->label == FCN_FORM_LABEL) {    //convert function_form to standardized form
-        convertFunctionForm(node);
+    if (node->label == "let") {
+        convertLetExpression(node);
+    } else if (node->label == "->") {
+        //Do not standardize conditionals (optimizations for the CISE machine)
     } else if (node->label == "not" || node->label == "neg") { //convert unary operators to standardized form
-        //Do not standardize (optimizations for the CISE machine) //convertUop(node);
+        //Do not standardize unary operators (optimizations for the CISE machine) //convertUop(node);
     } else if (node->label == "aug" || node->label == "or" || node->label == "&" || node->label == "gr" ||
                node->label == "ge" || node->label == "ls" || node->label == "le" || node->label == "eq" ||
                node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
                node->label == "/" || node->label == "**") {
-        //Do not standardize (optimizations for the CISE machine) //convertOperator(node);
-    } else if (node->label == "@") {    //convert infix operator to standardized form
-        convertInfixOperator(node);
+        //Do not standardize binary operators (optimizations for the CISE machine) //convertOperator(node);
+    } else if (node->label == "tau") {
+        //Do not standardize tau (optimizations for the CISE machine)
     } else if (node->label == "lambda") {    //convert lambda expression to standardized form
         if (node->firstKid->label == ",") { //lambda expression with a tuple of variables
-            //Do not standardize (optimizations for the CISE machine)
+            //Do not standardize lambda with a tuple of variables (optimizations for the CISE machine)
         } else {    //lambda expression with a list(?) of variable(s)
             convertLambdaExpression(node);
         }
+    } else if (node->label == FCN_FORM_LABEL) {    //convert function_form to standardized form
+        convertFunctionForm(node);
+    } else if (node->label == "@") {    //convert infix operator to standardized form
+        convertInfixOperator(node);
     } else if (node->label == "and") {
         convertAndExpression(node);
+    } else if (node->label == "within") {
+        convertWithinExpression(node);
     }
 }
 
