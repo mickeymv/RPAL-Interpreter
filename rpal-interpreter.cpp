@@ -938,12 +938,36 @@ void convertLetExpression(Node *letNode) {
 
 }
 
+void convertRecExpression(Node *recNode) {
+    recNode = recNode->firstKid;
+
+    Node *rightGammaChild = new Node;
+    rightGammaChild->label = GAMMA_STD_LABEL;
+    Node *rightRightLambdaChild = new Node;
+    rightRightLambdaChild->label = LAMBDA_STD_LABEL;
+
+    Node *leftChildYNode = new Node;
+    leftChildYNode->label = "Y";
+
+    rightGammaChild->firstKid = leftChildYNode;
+    leftChildYNode->nextSibling = rightRightLambdaChild;
+
+    Node *functionNameNode = new Node;
+    functionNameNode->label = recNode->firstKid->label;
+
+    rightRightLambdaChild->firstKid = functionNameNode;
+    functionNameNode->nextSibling = recNode->firstKid->nextSibling; //E
+
+    recNode->firstKid->nextSibling = rightGammaChild;
+
+}
+
 void convertWhereExpression(Node *whereNode) {
     whereNode->label = GAMMA_STD_LABEL;
 
 
     Node *pNode = whereNode->firstKid;
-    Node* leftChildLambdaNode = pNode->nextSibling;
+    Node *leftChildLambdaNode = pNode->nextSibling;
     leftChildLambdaNode->label = LAMBDA_STD_LABEL;
     Node *eNode = leftChildLambdaNode->firstKid->nextSibling;
 
@@ -989,11 +1013,7 @@ void recursivelyStandardizeTree(Node *node) {
     if (node->nextSibling != NULL) {
         recursivelyStandardizeTree(node->nextSibling);
     }
-    if (node->label == "let") {
-        convertLetExpression(node);
-    } else if (node->label == "where") {
-        convertWhereExpression(node);
-    } else if (node->label == "->") {
+    if (node->label == "->") {
         //Do not standardize conditionals (optimizations for the CISE machine)
     } else if (node->label == "not" || node->label == "neg") { //convert unary operators to standardized form
         //Do not standardize unary operators (optimizations for the CISE machine) //convertUop(node);
@@ -1018,6 +1038,12 @@ void recursivelyStandardizeTree(Node *node) {
         convertAndExpression(node);
     } else if (node->label == "within") {
         convertWithinExpression(node);
+    } else if (node->label == "rec") {
+        convertRecExpression(node);
+    } else if (node->label == "let") {
+        convertLetExpression(node);
+    } else if (node->label == "where") {
+        convertWhereExpression(node);
     }
 }
 
