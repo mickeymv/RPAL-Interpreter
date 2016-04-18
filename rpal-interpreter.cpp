@@ -4,6 +4,7 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 
@@ -74,6 +75,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     bool isBinaryOperator;
     string operatorStringValue;
     string defaultLabel;
+    bool isBoolean;
 
     MachineNode() {
         isName = false;
@@ -87,6 +89,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
         isUnaryOperator = false;
         isBinaryOperator = false;
         isComma = false;
+        isBoolean = false;
     }
 };
 
@@ -101,6 +104,10 @@ stack<Node *> trees; //Stack of trees used to manipulate the AST/ST generation.
 std::vector<std::list<MachineNode> > controlStructures(20); //each controlStructure would be a list of machineNodes
 int numberOfControlStructures = 1;
 
+stack<MachineNode> cseMachineControl; //the Control stack of the CSE machine
+stack<MachineNode> cseMachineStack; //the "Stack" stack of values of the CSE machine
+
+EnvironmentNode *currentEnvironment = new EnvironmentNode;
 
 /*
  * Check if the end of file has been reached.
@@ -1273,6 +1280,10 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.isComma = true;
         controlStructure->push_back(controlStructureNode);
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+    } else if (treeNode->label == "true" || treeNode->label == "false") {
+        controlStructureNode.isBoolean = true;
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     }
     controlStructures[controlStructureIndex] = *controlStructure;
 
@@ -1282,6 +1293,178 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
 
     if (treeNode->nextSibling != NULL) {
         recursivelyFlattenTree(treeNode->nextSibling, controlStructure, controlStructureIndex);
+    }
+}
+
+/*
+ * Initialize the Control, Stack and environment structure of the CSE
+ * machine with its initial values
+ */
+void initializeCSEMachine() {
+    //initialize environment with the primitive environment (PE / e0)
+    currentEnvironment->environmentIndex = 0;
+    currentEnvironment->previousEnvironment = NULL;
+
+//initialize control.
+    //push the first token as the e0 environment variable
+    MachineNode e0 = MachineNode();
+    e0.isEnvironmentMarker = true;
+    e0.environmentMarkerIndex = 0;
+    cseMachineControl.push(e0);
+// push the 0th control structure's elements
+    std::list<MachineNode>::const_iterator iterator;
+    for (iterator = controlStructures[0].begin(); iterator != controlStructures[0].end(); ++iterator) {
+        MachineNode controlStructureToken = *iterator;
+        cseMachineControl.push(controlStructureToken);
+    }
+
+    //initialize stack with e0 as well
+    cseMachineStack.push(e0);
+}
+
+/*
+ * process the CSE machine by checking the value of top of the
+ * control stack and processing it properly.
+ */
+void processCSEMachine() {
+    MachineNode controlTop = cseMachineControl.top();
+    cseMachineControl.pop();
+
+    cout<<"\n\n Control's top is: "<<controlTop.defaultLabel;
+
+    if (controlTop.isInt) { //CSE rule 1 for ints
+        cseMachineStack.push(controlTop);
+    } else if (controlTop.isName) { //CSE rule 1 for variables
+        controlTop.isName = false;
+        controlTop.isInt = true;
+        controlTop.intValue = currentEnvironment->variableValuesMap[controlTop.nameValue];
+        cseMachineStack.push(controlTop);
+    } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
+        MachineNode stackTop = cseMachineStack.top();
+        cseMachineStack.pop();
+        MachineNode stackTopEnvironmentVariable = cseMachineStack.top();
+        cseMachineStack.pop();
+        if (!stackTopEnvironmentVariable.isEnvironmentMarker ||
+            (controlTop.environmentMarkerIndex != stackTopEnvironmentVariable.environmentMarkerIndex)) {
+            cout << "\n ERROR in resolving environment variables on control and stack! Die now! \n";
+            exit(0);
+        }
+        cseMachineStack.push(stackTop);
+    } else if (controlTop.isLambda) {  //CSE rule 2
+        controlTop.environmentMarkerIndex = currentEnvironment->environmentIndex; //index of environment in which this lambda holds
+        cseMachineStack.push(controlTop);
+    } else if (controlTop.isGamma) {  //CSE rule 3 & 4
+        MachineNode result = MachineNode();
+        MachineNode operatorNode = cseMachineStack.top();
+        cseMachineStack.pop();
+        MachineNode firstOperand = cseMachineStack.top();
+        cseMachineStack.pop();
+        if (operatorNode.isUnaryOperator || operatorNode.isUnaryOperator) { //CSE rule 3
+            if (operatorNode.isUnaryOperator) {
+                if (operatorNode.operatorStringValue == "neg") {
+                    result.isInt = true;
+                    result.intValue = -firstOperand.intValue;
+                } else if (operatorNode.operatorStringValue == "not") {
+                    if (!firstOperand.isBoolean) {
+                        cout << "\n Operand is not boolean to apply not, EXIT! \n";
+                        exit(0);
+                    } else {
+                        result.isBoolean = true;
+                        if (firstOperand.defaultLabel == "true") {
+                            result.defaultLabel = "false";
+                        } else if (firstOperand.defaultLabel == "false") {
+                            result.defaultLabel = "true";
+                        }
+                    }
+                }
+            }
+            else if (operatorNode.isBinaryOperator) {
+                MachineNode secondOperand = cseMachineStack.top();
+                cseMachineStack.pop();
+                //node->label == "aug" ||
+                if (operatorNode.operatorStringValue == "**") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for ** operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = true;
+                        result.intValue = pow(firstOperand.intValue, secondOperand.intValue);
+                    }
+                } else if (operatorNode.operatorStringValue == "*") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for * operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = true;
+                        result.intValue = firstOperand.intValue * secondOperand.intValue;
+                    }
+                } else if (operatorNode.operatorStringValue == "-") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for - operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = true;
+                        result.intValue = firstOperand.intValue - secondOperand.intValue;
+                    }
+                } else if (operatorNode.operatorStringValue == "+") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for + operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = true;
+                        result.intValue = firstOperand.intValue + secondOperand.intValue;
+                    }
+                }
+//            node->label == "or"
+//            node->label == "&" || node->label == "gr" ||
+//             node->label == "ge" || node->label == "ls" || node->label == "le" || node->label == "eq" ||
+//             node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
+//             node->label == "/" || node->label == "**")
+            }
+        } else if (operatorNode.isLambda) {     //CSE rule 4
+            cout<<"\n Lambda1 \n";
+            MachineNode secondOperand = cseMachineStack.top();
+            cseMachineStack.pop();
+            cout<<"\n Lambda2 \n";
+            //add new lambda environment variable to control
+            MachineNode environmentVariable = MachineNode();
+            environmentVariable.isEnvironmentMarker = true;
+            environmentVariable.environmentMarkerIndex = operatorNode.indexOfBodyOfLambda;
+            cseMachineControl.push(environmentVariable);
+            cout<<"\n Lambda3 \n";
+            //update currentEnvironment
+            EnvironmentNode* newEnvironment = new EnvironmentNode();
+            newEnvironment->previousEnvironment = currentEnvironment;
+            currentEnvironment = newEnvironment;
+            newEnvironment->environmentIndex = operatorNode.indexOfBodyOfLambda;
+            std::list<string>::const_iterator boundVariableIterator;
+            boundVariableIterator = secondOperand.listOfBoundVariables.begin();
+            newEnvironment->variableValuesMap[*boundVariableIterator] = secondOperand.intValue;
+            cout<<"\n Lambda4 \n";
+            //add new lambda environment variable to control
+            cseMachineStack.push(environmentVariable);
+            cout<<"\n Lambda5 \n";
+            //add lambda's control structure to control
+            std::list<MachineNode>::const_iterator iterator;
+            for (iterator = controlStructures[0].begin(); iterator != controlStructures[operatorNode.indexOfBodyOfLambda].end(); ++iterator) {
+                MachineNode controlStructureToken = *iterator;
+                cseMachineControl.push(controlStructureToken);
+            }
+            cout<<"\n Lambda6 \n";
+        }
+        cseMachineStack.push(result);
+    }
+}
+
+/*
+ * Initialize and run the CSE machine to compute the value
+ * of the RPAL program.
+ */
+void runCSEMachine() {
+    initializeCSEMachine();
+
+    while (!cseMachineControl.empty()) {
+        processCSEMachine();
     }
 }
 
@@ -1449,6 +1632,10 @@ int main(int argc, char *argv[]) {
                     flattenStandardizedTree();
                     cout << "\nThe control structures are:\n";
                     printControlStructures();
+                    cout << "\nGoing to run the CSE machine now!\n";
+                    runCSEMachine();
+                    cout<<"\n\nThe output of the RPAL program is:\n\n";
+                    cout<<cseMachineStack.top().intValue;
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
