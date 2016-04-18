@@ -1357,7 +1357,8 @@ void processCSEMachine() {
             }
         }
         if (!variableValueFound) {
-            cout<<"\n\nERROR! Value for bound variable '"<<controlTop.nameValue<<"' not found in environment tree! DIE!\n\n";
+            cout << "\n\nERROR! Value for bound variable '" << controlTop.nameValue <<
+            "' not found in environment tree! DIE!\n\n";
             exit(0);
         }
         controlTop.intValue = variableValuesMap[controlTop.nameValue];
@@ -1437,12 +1438,98 @@ void processCSEMachine() {
                         result.isInt = true;
                         result.intValue = firstOperand.intValue + secondOperand.intValue;
                     }
-                }
-//            node->label == "or"
-//            node->label == "&" || node->label == "gr" ||
-//             node->label == "ge" || node->label == "ls" || node->label == "le" || node->label == "eq" ||
-//             node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
-//             node->label == "/" || node->label == "**")
+                } else if (operatorNode.operatorStringValue == "/") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for '/' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = true;
+                        result.intValue = firstOperand.intValue / secondOperand.intValue;
+                    }
+                } else if (operatorNode.operatorStringValue == "gr") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for 'gr' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        result.defaultLabel = firstOperand.intValue > secondOperand.intValue ? "true" : "false";
+                    }
+                } else if (operatorNode.operatorStringValue == "ge") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for 'ge' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        result.defaultLabel = firstOperand.intValue >= secondOperand.intValue ? "true" : "false";
+                    }
+                } else if (operatorNode.operatorStringValue == "ls") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for 'ls' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        result.defaultLabel = firstOperand.intValue < secondOperand.intValue ? "true" : "false";
+                    }
+                } else if (operatorNode.operatorStringValue == "le") {
+                    if (!firstOperand.isInt || !secondOperand.isInt) {
+                        cout << "\n operands not int for 'le' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        result.defaultLabel = firstOperand.intValue <= secondOperand.intValue ? "true" : "false";
+                    }
+                } else if (operatorNode.operatorStringValue == "eq") {
+                    if ((!firstOperand.isInt || !secondOperand.isInt) ||
+                        (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+                        cout << "\n operands not of same type for 'eq' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        if (firstOperand.isInt) {
+                            result.defaultLabel = firstOperand.intValue == secondOperand.intValue ? "true" : "false";
+                        } else if (firstOperand.isBoolean) {
+                            result.defaultLabel = firstOperand.defaultLabel == secondOperand.defaultLabel ? "true" : "false";
+                        }
+                    }
+                } else if (operatorNode.operatorStringValue == "ne") {
+                    if ((!firstOperand.isInt || !secondOperand.isInt) ||
+                        (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+                        cout << "\n operands not of same type for 'ne' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        if (firstOperand.isInt) {
+                            result.defaultLabel = firstOperand.intValue != secondOperand.intValue ? "true" : "false";
+                        } else if (firstOperand.isBoolean) {
+                            result.defaultLabel = firstOperand.defaultLabel != secondOperand.defaultLabel ? "true" : "false";
+                        }
+                    }
+                } else if (operatorNode.operatorStringValue == "or") {
+                    if (!firstOperand.isBoolean || !secondOperand.isBoolean) {
+                        cout << "\n operands are not boolean for 'or' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        result.defaultLabel = (firstOperand.defaultLabel == "true" || secondOperand.defaultLabel == "true")
+                                              ? "true" : "false";
+                    }
+                } else if (operatorNode.operatorStringValue == "&") {
+                    if (!firstOperand.isBoolean || !secondOperand.isBoolean) {
+                        cout << "\n operands are not boolean for '&' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isInt = false;
+                        result.isBoolean = true;
+                        result.defaultLabel = (firstOperand.defaultLabel == "true" && secondOperand.defaultLabel == "true")
+                                              ? "true" : "false";
+                    }
             }
             cseMachineStack.push(result);
         } else if (operatorNode.isLambda) {     //CSE rule 4
@@ -1453,7 +1540,7 @@ void processCSEMachine() {
 //            cseMachineStack.pop();
 
 
-            cout << "\n Lambda2 \n";
+            //cout << "\n Lambda2 \n";
             //add new lambda's environment variable to control
             MachineNode newEnvironmentVariableForCurrentLambda = MachineNode();
             newEnvironmentVariableForCurrentLambda.isEnvironmentMarker = true;
@@ -1461,7 +1548,7 @@ void processCSEMachine() {
             newEnvironmentVariableForCurrentLambda.defaultLabel =
                     "e" + std::to_string(operatorNode.indexOfBodyOfLambda);
             cseMachineControl.push(newEnvironmentVariableForCurrentLambda);
-            cout << "\n Lambda3 \n";
+            //cout << "\n Lambda3 \n";
 
             //update currentEnvironment
             EnvironmentNode *newEnvironmentForCurrentLambda = new EnvironmentNode();
@@ -1471,12 +1558,12 @@ void processCSEMachine() {
             std::list<string>::const_iterator boundVariableIterator;
             boundVariableIterator = operatorNode.listOfBoundVariables.begin();
             newEnvironmentForCurrentLambda->variableValuesMap[*boundVariableIterator] = firstOperand.intValue;
-            cout << "\n Lambda4 \n";
+            //cout << "\n Lambda4 \n";
 
             //add new lambda environment variable to stack
             cseMachineStack.push(newEnvironmentVariableForCurrentLambda);
 
-            cout << "\n Lambda5 \n";
+            //cout << "\n Lambda5 \n";
             //add lambda's control structure to control
             std::list<MachineNode>::const_iterator iterator;
             for (iterator = controlStructures[operatorNode.indexOfBodyOfLambda].begin();
@@ -1484,9 +1571,9 @@ void processCSEMachine() {
                 MachineNode controlStructureToken = *iterator;
                 cseMachineControl.push(controlStructureToken);
             }
-            cout << "\n Lambda6 \n";
+            //cout << "\n Lambda6 \n";
         }
-    } else if (controlTop.isBinaryOperator) {
+    } else if (controlTop.isBinaryOperator) {  //CSE rule 6
         MachineNode result = MachineNode();
         MachineNode operatorNode = controlTop;
         MachineNode firstOperand = cseMachineStack.top();
@@ -1496,7 +1583,7 @@ void processCSEMachine() {
         //node->label == "aug" ||
         if (operatorNode.operatorStringValue == "**") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
-                cout << "\n operands not int for ** operation! exiting! \n";
+                cout << "\n operands not int for '**' operation! exiting! \n";
                 exit(0);
             } else {
                 result.isInt = true;
@@ -1504,7 +1591,7 @@ void processCSEMachine() {
             }
         } else if (operatorNode.operatorStringValue == "*") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
-                cout << "\n operands not int for * operation! exiting! \n";
+                cout << "\n operands not int for '*' operation! exiting! \n";
                 exit(0);
             } else {
                 result.isInt = true;
@@ -1512,7 +1599,7 @@ void processCSEMachine() {
             }
         } else if (operatorNode.operatorStringValue == "-") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
-                cout << "\n operands not int for - operation! exiting! \n";
+                cout << "\n operands not int for '-' operation! exiting! \n";
                 exit(0);
             } else {
                 result.isInt = true;
@@ -1520,20 +1607,107 @@ void processCSEMachine() {
             }
         } else if (operatorNode.operatorStringValue == "+") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
-                cout << "\n operands not int for + operation! exiting! \n";
+                cout << "\n operands not int for '+' operation! exiting! \n";
                 exit(0);
             } else {
                 result.isInt = true;
                 result.intValue = firstOperand.intValue + secondOperand.intValue;
             }
+        } else if (operatorNode.operatorStringValue == "/") {
+            if (!firstOperand.isInt || !secondOperand.isInt) {
+                cout << "\n operands not int for '/' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = true;
+                result.intValue = firstOperand.intValue / secondOperand.intValue;
+            }
+        } else if (operatorNode.operatorStringValue == "gr") {
+            if (!firstOperand.isInt || !secondOperand.isInt) {
+                cout << "\n operands not int for 'gr' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.intValue > secondOperand.intValue ? "true" : "false";
+            }
+        } else if (operatorNode.operatorStringValue == "ge") {
+            if (!firstOperand.isInt || !secondOperand.isInt) {
+                cout << "\n operands not int for 'ge' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.intValue >= secondOperand.intValue ? "true" : "false";
+            }
+        } else if (operatorNode.operatorStringValue == "ls") {
+            if (!firstOperand.isInt || !secondOperand.isInt) {
+                cout << "\n operands not int for 'ls' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.intValue < secondOperand.intValue ? "true" : "false";
+            }
+        } else if (operatorNode.operatorStringValue == "le") {
+            if (!firstOperand.isInt || !secondOperand.isInt) {
+                cout << "\n operands not int for 'le' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.intValue <= secondOperand.intValue ? "true" : "false";
+            }
+        } else if (operatorNode.operatorStringValue == "eq") {
+            if ((!firstOperand.isInt || !secondOperand.isInt) ||
+                (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+                cout << "\n operands not of same type for 'eq' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                if (firstOperand.isInt) {
+                    result.defaultLabel = firstOperand.intValue == secondOperand.intValue ? "true" : "false";
+                } else if (firstOperand.isBoolean) {
+                    result.defaultLabel = firstOperand.defaultLabel == secondOperand.defaultLabel ? "true" : "false";
+                }
+            }
+        } else if (operatorNode.operatorStringValue == "ne") {
+            if ((!firstOperand.isInt || !secondOperand.isInt) ||
+                (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+                cout << "\n operands not of same type for 'ne' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                if (firstOperand.isInt) {
+                    result.defaultLabel = firstOperand.intValue != secondOperand.intValue ? "true" : "false";
+                } else if (firstOperand.isBoolean) {
+                    result.defaultLabel = firstOperand.defaultLabel != secondOperand.defaultLabel ? "true" : "false";
+                }
+            }
+        } else if (operatorNode.operatorStringValue == "or") {
+            if (!firstOperand.isBoolean || !secondOperand.isBoolean) {
+                cout << "\n operands are not boolean for 'or' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                result.defaultLabel = (firstOperand.defaultLabel == "true" || secondOperand.defaultLabel == "true")
+                                      ? "true" : "false";
+            }
+        } else if (operatorNode.operatorStringValue == "&") {
+            if (!firstOperand.isBoolean || !secondOperand.isBoolean) {
+                cout << "\n operands are not boolean for '&' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isInt = false;
+                result.isBoolean = true;
+                result.defaultLabel = (firstOperand.defaultLabel == "true" && secondOperand.defaultLabel == "true")
+                                      ? "true" : "false";
+            }
         }
-//            node->label == "or"
-//            node->label == "&" || node->label == "gr" ||
-//             node->label == "ge" || node->label == "ls" || node->label == "le" || node->label == "eq" ||
-//             node->label == "ne" || node->label == "+" || node->label == "-" || node->label == "*" ||
-//             node->label == "/" || node->label == "**")
         cseMachineStack.push(result);
-    } else if (controlTop.isUnaryOperator) {
+    } else if (controlTop.isUnaryOperator) {  //CSE rule 7
         MachineNode result = MachineNode();
         MachineNode operatorNode = controlTop;
         MachineNode firstOperand = cseMachineStack.top();
@@ -1566,7 +1740,8 @@ void runCSEMachine() {
     initializeCSEMachine();
 
     while (!cseMachineControl.empty()) {
-        processCSEMachine();
+        processCSEMachine(); //process the value on top of the control stack one by one
+        // according to the rules of the CSE machine
     }
 }
 
