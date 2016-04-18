@@ -1342,7 +1342,25 @@ void processCSEMachine() {
     } else if (controlTop.isName) { //CSE rule 1 for variables
         controlTop.isName = false;
         controlTop.isInt = true;
-        controlTop.intValue = currentEnvironment->variableValuesMap[controlTop.nameValue];
+        EnvironmentNode *environmentWithVariableValue = currentEnvironment;
+        std::map<std::string, int> variableValuesMap;
+        bool variableValueFound = false;
+        while (environmentWithVariableValue != NULL) {
+            variableValuesMap = environmentWithVariableValue->variableValuesMap;
+            if (variableValuesMap.find(controlTop.nameValue) == variableValuesMap.end()) {
+                // not found, check parent environment
+                environmentWithVariableValue = environmentWithVariableValue->previousEnvironment;
+            } else {
+                // found
+                variableValueFound = true;
+                break;
+            }
+        }
+        if (!variableValueFound) {
+            cout<<"\n\nERROR! Value for bound variable '"<<controlTop.nameValue<<"' not found in environment tree! DIE!\n\n";
+            exit(0);
+        }
+        controlTop.intValue = variableValuesMap[controlTop.nameValue];
         cseMachineStack.push(controlTop);
     } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
         MachineNode stackTop = cseMachineStack.top();
