@@ -1178,69 +1178,79 @@ void printTree() {
 /*
  * Recursively flatten tree.
  */
-void recursivelyFlattenTree(Node *treeNode, list<MachineNode> controlStructure, int controlStructureIndex) {
-    cout << "\n in recursivelyFlattenTree for node: " << treeNode->label;
+void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure, int controlStructureIndex) {
+    cout << "\n in recursivelyFlattenTree for node: " << treeNode->label << ", controlStructure: " <<
+    controlStructureIndex << " and size=" << controlStructure->size();
     bool isLambda = false;
     MachineNode controlStructureNode = MachineNode();
     controlStructureNode.defaultLabel = treeNode->label;
     if (treeNode->label == "gamma" || treeNode->label == GAMMA_STD_LABEL) {
         controlStructureNode.isGamma = true;
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
         cout << "\n it's a gamma!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 5, "<STR:") == 0) {
         controlStructureNode.isString = true;
         controlStructureNode.stringValue = treeNode->label.substr(5);
         controlStructureNode.stringValue = controlStructureNode.stringValue.substr(0,
                                                                                    controlStructureNode.stringValue.length() -
                                                                                    1);
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
         cout << "\n it's a string!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 4, "<ID:") == 0) {
         controlStructureNode.isName = true;
         controlStructureNode.nameValue = treeNode->label.substr(4);
         controlStructureNode.nameValue = controlStructureNode.nameValue.substr(0,
                                                                                controlStructureNode.nameValue.length() -
                                                                                1);
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
         cout << "\n it's an identifier!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 5, "<INT:") == 0) {
         controlStructureNode.isInt = true;
         string intString = treeNode->label.substr(5);
-        cout<<"\n intString= "<<intString<<" length= "<<intString.length();
+        //cout<<"\n intString= "<<intString<<" length= "<<intString.length();
         intString = intString.substr(0,
-                                                            intString.length() -
-                                                            1);
-        cout<<"\n intString= "<<intString;
+                                     intString.length() -
+                                     1);
+        //cout<<"\n intString= "<<intString;
         controlStructureNode.intValue = std::stoi(intString);
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
         cout << "\n it's an integer!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == LAMBDA_STD_LABEL || treeNode->label == "lambda") {
         cout << "\n it's a lambda!";
         isLambda = true;
         controlStructureNode.isLambda = true;
         if (treeNode->firstKid->label == ",") {
+            cout << "\nIt's a comma node! bound variables!\n";
             Node *boundVariableNode = treeNode->firstKid->firstKid;
             while (boundVariableNode != NULL) {
                 controlStructureNode.listOfBoundVariables.push_back(boundVariableNode->label);
                 boundVariableNode = boundVariableNode->nextSibling;
             }
         } else { //only one bound variable, which is first child (leftChild)
+            cout << "\nthe bound variable for this lambda= " << treeNode->firstKid->label << "\n";
             controlStructureNode.listOfBoundVariables.push_back(treeNode->firstKid->label);
         }
         controlStructureNode.indexOfBodyOfLambda = numberOfControlStructures++;
-        controlStructure.push_back(controlStructureNode);
-        list<MachineNode> controlStructureOfLambda;
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+        list<MachineNode> *controlStructureOfLambda = new list<MachineNode>;
         recursivelyFlattenTree(treeNode->firstKid->nextSibling, controlStructureOfLambda,
                                controlStructureNode.indexOfBodyOfLambda);
     } else if (treeNode->label == "->") {
         cout << "\n\n ****** Handle CONDITIONAL! ****** \n\n";
         controlStructureNode.isConditional = true;
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "not" || treeNode->label == "neg") { //convert unary operators to standardized form
         cout << "\n it's a " << treeNode->label;
         controlStructureNode.isUnaryOperator = true;
         controlStructureNode.operatorStringValue = treeNode->label;
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "aug" || treeNode->label == "or" || treeNode->label == "&" ||
                treeNode->label == "gr" ||
                treeNode->label == "ge" || treeNode->label == "ls" || treeNode->label == "le" ||
@@ -1251,18 +1261,20 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> controlStructure, 
         cout << "\n it's a " << treeNode->label;
         controlStructureNode.isBinaryOperator = true;
         controlStructureNode.operatorStringValue = treeNode->label;
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "tau") {
         cout << "\n\n ****** Handle TAU! ****** \n\n";
         controlStructureNode.isTau = true;
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == ",") {
         cout << "\n\n ****** Handle CommaNode! ****** \n\n";
         controlStructureNode.isComma = true;
-        controlStructure.push_back(controlStructureNode);
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     }
-
-    controlStructures[controlStructureIndex] = controlStructure;
+    controlStructures[controlStructureIndex] = *controlStructure;
 
     if (!isLambda && treeNode->firstKid != NULL) {
         recursivelyFlattenTree(treeNode->firstKid, controlStructure, controlStructureIndex);
@@ -1281,7 +1293,9 @@ void flattenStandardizedTree() {
     cout << "\n\nGoing to flattenStandardizedTree now!\n\n";
     if (!trees.empty()) {
         Node *treeRoot = trees.top();
-        list<MachineNode> controlStructure;
+        //cout << "\n\nBefore pointer declare\n\n";
+        list<MachineNode> *controlStructure = new list<MachineNode>;
+        //cout << "\n\n after pointer declare\n\n";
         recursivelyFlattenTree(treeRoot, controlStructure, 0);
     }
 }
@@ -1320,7 +1334,7 @@ void printControlStructures() {
             } else if (controlStructureToken.isString) {
                 cout << controlStructureToken.stringValue << " ";
             } else if (controlStructureToken.isLambda) {
-                cout << "lambda [" << controlStructureToken.indexOfBodyOfLambda << "] ";
+                cout << "lambda[" << controlStructureToken.indexOfBodyOfLambda << "] ";
             } else if (controlStructureToken.isInt) {
                 cout << controlStructureToken.intValue << " ";
             } else if (controlStructureToken.isUnaryOperator || controlStructureToken.isBinaryOperator) {
