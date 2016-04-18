@@ -1185,10 +1185,9 @@ void printTree() {
 /*
  * Recursively flatten tree.
  */
-void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure, int controlStructureIndex) {
+void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure, int controlStructureIndex, bool processKid, bool processSiblings) {
     cout << "\n in recursivelyFlattenTree for node: " << treeNode->label << ", controlStructure: " <<
     controlStructureIndex << " and size=" << controlStructure->size();
-    bool isLambda = false;
     MachineNode controlStructureNode = MachineNode();
     controlStructureNode.defaultLabel = treeNode->label;
     if (treeNode->label == "gamma" || treeNode->label == GAMMA_STD_LABEL) {
@@ -1228,7 +1227,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == LAMBDA_STD_LABEL || treeNode->label == "lambda") {
         cout << "\n it's a lambda!";
-        isLambda = true;
+        processKid = false;
         controlStructureNode.isLambda = true;
         if (treeNode->firstKid->label == ",") {
             cout << "\nIt's a comma node! bound variables!\n";
@@ -1250,11 +1249,33 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
         list<MachineNode> *controlStructureOfLambda = new list<MachineNode>;
         recursivelyFlattenTree(treeNode->firstKid->nextSibling, controlStructureOfLambda,
-                               controlStructureNode.indexOfBodyOfLambda);
+                               controlStructureNode.indexOfBodyOfLambda, true, true);
     } else if (treeNode->label == "->") {
         cout << "\n\n ****** Handle CONDITIONAL! ****** \n\n";
-        controlStructureNode.isConditional = true;
-        controlStructure->push_back(controlStructureNode);
+        processKid = false;
+        MachineNode trueNode = MachineNode();
+        MachineNode falseNode = MachineNode();
+        MachineNode betaNode = MachineNode();
+        betaNode.isConditional = true;
+        trueNode.isConditional = true;
+        falseNode.isConditional = true;
+        betaNode.defaultLabel = "BetaNode";
+        trueNode.defaultLabel = "trueNode";
+        falseNode.defaultLabel = "falseNode";
+        trueNode.indexOfBodyOfLambda = numberOfControlStructures++;
+        falseNode.indexOfBodyOfLambda = numberOfControlStructures++;
+        betaNode.indexOfBodyOfLambda = controlStructureIndex;
+        list<MachineNode> *controlStructureOfTrueNode = new list<MachineNode>;
+        recursivelyFlattenTree(treeNode->firstKid->nextSibling, controlStructureOfTrueNode,
+                               trueNode.indexOfBodyOfLambda, true, false);
+        list<MachineNode> *controlStructureOfFalseNode = new list<MachineNode>;
+        recursivelyFlattenTree(treeNode->firstKid->nextSibling->nextSibling, controlStructureOfFalseNode,
+                               falseNode.indexOfBodyOfLambda, true, false);
+        controlStructure->push_back(trueNode);
+        controlStructure->push_back(falseNode);
+        controlStructure->push_back(betaNode);
+        recursivelyFlattenTree(treeNode->firstKid, controlStructure,
+                               controlStructureIndex, true, false);
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "not" || treeNode->label == "neg") { //convert unary operators to standardized form
         cout << "\n it's a " << treeNode->label;
@@ -1291,12 +1312,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
     }
     controlStructures[controlStructureIndex] = *controlStructure;
 
-    if (!isLambda && treeNode->firstKid != NULL) {
-        recursivelyFlattenTree(treeNode->firstKid, controlStructure, controlStructureIndex);
+    if (processKid && treeNode->firstKid != NULL) {
+        recursivelyFlattenTree(treeNode->firstKid, controlStructure, controlStructureIndex, true, true);
     }
 
-    if (treeNode->nextSibling != NULL) {
-        recursivelyFlattenTree(treeNode->nextSibling, controlStructure, controlStructureIndex);
+    if (processSiblings && treeNode->nextSibling != NULL) {
+        recursivelyFlattenTree(treeNode->nextSibling, controlStructure, controlStructureIndex, true, true);
     }
 }
 
@@ -1749,34 +1770,34 @@ void processCSEMachine() {
             cseMachineStack.push(result);
         }
     }
+}
 
 /*
  * Initialize and run the CSE machine to compute the value
  * of the RPAL program.
  */
-    void runCSEMachine() {
-        initializeCSEMachine();
-
-        while (!cseMachineControl.empty()) {
-            processCSEMachine(); //process the value on top of the control stack one by one
-            // according to the rules of the CSE machine
-        }
+void runCSEMachine() {
+    initializeCSEMachine();
+    while (!cseMachineControl.empty()) {
+        processCSEMachine(); //process the value on top of the control stack one by one
+        // according to the rules of the CSE machine
     }
+}
 
 /*
  * Flatten the standardized tree into control structures
  * with a pre-order traversal.
  */
-    void flattenStandardizedTree() {
-        cout << "\n\nGoing to flattenStandardizedTree now!\n\n";
-        if (!trees.empty()) {
-            Node *treeRoot = trees.top();
-            //cout << "\n\nBefore pointer declare\n\n";
-            list<MachineNode> *controlStructure = new list<MachineNode>;
-            //cout << "\n\n after pointer declare\n\n";
-            recursivelyFlattenTree(treeRoot, controlStructure, 0);
-        }
+void flattenStandardizedTree() {
+    cout << "\n\nGoing to flattenStandardizedTree now!\n\n";
+    if (!trees.empty()) {
+        Node *treeRoot = trees.top();
+        //cout << "\n\nBefore pointer declare\n\n";
+        list<MachineNode> *controlStructure = new list<MachineNode>;
+        //cout << "\n\n after pointer declare\n\n";
+        recursivelyFlattenTree(treeRoot, controlStructure, 0, true, true);
     }
+}
 
 /*
  * Function to pop the (only) node
@@ -1784,133 +1805,97 @@ void processCSEMachine() {
  * to a standardized tree (tree whose internal nodes are only gammas or lambdas)
  * in a post-order fashion.
  */
-    void convertASTToStandardizedTree() {
-        cout << "\n\nGoing to standardize the tree now!\n\n";
-        if (!trees.empty()) {
-            //cout << "\n\nThis is supposed to be the only tree below!\n";
-            Node *treeRootOfAST = trees.top();
-            recursivelyStandardizeTree(treeRootOfAST);
-        }
+void convertASTToStandardizedTree() {
+    cout << "\n\nGoing to standardize the tree now!\n\n";
+    if (!trees.empty()) {
+        //cout << "\n\nThis is supposed to be the only tree below!\n";
+        Node *treeRootOfAST = trees.top();
+        recursivelyStandardizeTree(treeRootOfAST);
     }
+}
 
 /*
  *
  */
-    void printControlStructures() {
-        cout << "\n Going to print control structures!\n";
-        for (int i = 0; i < numberOfControlStructures; i++) {
-            cout << "\nControl Structure Number: " << i << ", number of items in this controlStructure= " <<
-            controlStructures[i].size();
-            std::list<MachineNode>::const_iterator iterator;
-            cout << "\n";
-            for (iterator = controlStructures[i].begin(); iterator != controlStructures[i].end(); ++iterator) {
-                MachineNode controlStructureToken = *iterator;
-                if (controlStructureToken.isGamma) {
-                    cout << "gamma ";
-                } else if (controlStructureToken.isName) {
-                    cout << controlStructureToken.nameValue << " ";
-                } else if (controlStructureToken.isString) {
-                    cout << controlStructureToken.stringValue << " ";
-                } else if (controlStructureToken.isLambda) {
-                    cout << "lambda[" << controlStructureToken.indexOfBodyOfLambda << "] ";
-                } else if (controlStructureToken.isInt) {
-                    cout << controlStructureToken.intValue << " ";
-                } else if (controlStructureToken.isUnaryOperator || controlStructureToken.isBinaryOperator) {
-                    cout << controlStructureToken.operatorStringValue << " ";
-                } else if (controlStructureToken.isTau) {
-                    cout << "TAU ";
-                } else if (controlStructureToken.isComma) {
-                    cout << "COMMA ";
-                } else if (controlStructureToken.isConditional) {
-                    cout << "-> ";
-                }
+void printControlStructures() {
+    cout << "\n Going to print control structures!\n";
+    for (int i = 0; i < numberOfControlStructures; i++) {
+        cout << "\nControl Structure Number: " << i << ", number of items in this controlStructure= " <<
+        controlStructures[i].size();
+        std::list<MachineNode>::const_iterator iterator;
+        cout << "\n";
+        for (iterator = controlStructures[i].begin(); iterator != controlStructures[i].end(); ++iterator) {
+            MachineNode controlStructureToken = *iterator;
+            if (controlStructureToken.isGamma) {
+                cout << "gamma ";
+            } else if (controlStructureToken.isName) {
+                cout << controlStructureToken.nameValue << " ";
+            } else if (controlStructureToken.isString) {
+                cout << controlStructureToken.stringValue << " ";
+            } else if (controlStructureToken.isLambda) {
+                cout << "lambda[" << controlStructureToken.indexOfBodyOfLambda << "] ";
+            } else if (controlStructureToken.isInt) {
+                cout << controlStructureToken.intValue << " ";
+            } else if (controlStructureToken.isUnaryOperator || controlStructureToken.isBinaryOperator) {
+                cout << controlStructureToken.operatorStringValue << " ";
+            } else if (controlStructureToken.isTau) {
+                cout << "TAU ";
+            } else if (controlStructureToken.isComma) {
+                cout << "COMMA ";
+            } else if (controlStructureToken.isConditional) {
+                cout << controlStructureToken.defaultLabel << "[" << controlStructureToken.indexOfBodyOfLambda<<"] ";
             }
-            cout << "\n";
         }
+        cout << "\n";
     }
+}
 
 /*
  * Function to consume the next token from input with the next
  * expected token by the RPAL grammar and move ahead to read the
  * next token from input.
  */
-    void readToken(ifstream &file, string token) {
-        if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
-            cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
-            throw exception();
-        }
-        //cout << "\ntoken '" << token << "' used! going to read next!";
-        scan(file);
+void readToken(ifstream &file, string token) {
+    if (token.compare(NT) != 0 && token.compare(nextTokenType) != 0) {
+        cout << "\n\nError! Expected '" << token << "' , but found '" << NT << "' !\n\n";
+        throw exception();
     }
+    //cout << "\ntoken '" << token << "' used! going to read next!";
+    scan(file);
+}
 
-    int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 
-        if (argc == 3) {
-            if (argv[2][0] == '-') {
-                cout << "\n\nUsages:\n" << argv[0] << " <filename>\n";
-                cout << argv[0] << " -ast <filename>\n";
-                cout << argv[0] << " -l <filename>\n\n";
-            }
-            else {
-                // We assume argv[2] is a filename to open
-                ifstream the_file(argv[2]);
-                // Always check to see if file opening succeeded
-                if (!the_file.is_open())
-                    cout << "\n\nCould not open file: '" << argv[2] << "'" << "\n\n";
-                else {
-                    if (strcmp(argv[1], "-l") == 0) { //Print input? (//Listing of input?)
-                        /* Optional switches: -l This produces a listing of the input. */
-                        cout << "\n\n";
-                        char x;
-                        // the_file.get ( x ) returns false if the end of the file
-                        //  is reached or an error occurs
-                        while (the_file.get(x))
-                            cout << x;
-                        // the_file is closed implicitly here
-                        cout << "\n\n";
-                    } else if (strcmp(argv[1], "-ast") == 0) {
-                        /*
-                         * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
-                         * No headers or footers.
-                         * The AST must match exactly, character for character, the AST produced by rpal.
-                         */
-                        //Call ast generator
-                        //Call parser
-                        //cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
-                        scan(the_file); //Prepare the first token by placing it within 'NT'
-                        E(the_file);    //Call the first non-terminal procedure to start parsing
-                        //cout << " " << NT;
-                        if (checkIfEOF(the_file)) {
-//                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
-//                    exit(1);
-                            //cout << "\n\nAST Tree should print!\n\n";
-                            printTree();
-
-                        } else {
-                            cout <<
-                            "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
-                            exit(0);
-                        }
-                    }
-                }
-            }
+    if (argc == 3) {
+        if (argv[2][0] == '-') {
+            cout << "\n\nUsages:\n" << argv[0] << " <filename>\n";
+            cout << argv[0] << " -ast <filename>\n";
+            cout << argv[0] << " -l <filename>\n\n";
         }
-
-
-        else if (argc == 2) {
-            if (argv[1][0] == '-') {
-                cout << "\n\nUsages:\n" << argv[0] << " <filename>\n";
-                cout << argv[0] << " -ast <filename>\n";
-                cout << argv[0] << " -l <filename>\n\n";
-            }
+        else {
+            // We assume argv[2] is a filename to open
+            ifstream the_file(argv[2]);
+            // Always check to see if file opening succeeded
+            if (!the_file.is_open())
+                cout << "\n\nCould not open file: '" << argv[2] << "'" << "\n\n";
             else {
-                /* p2 (without switches) should produce the result of the program. */
-                // We assume argv[2] is a filename to open
-                ifstream the_file(argv[1]);
-                // Always check to see if file opening succeeded
-                if (!the_file.is_open())
-                    cout << "\n\nCould not open file: '" << argv[1] << "'" << "\n\n";
-                else {
+                if (strcmp(argv[1], "-l") == 0) { //Print input? (//Listing of input?)
+                    /* Optional switches: -l This produces a listing of the input. */
+                    cout << "\n\n";
+                    char x;
+                    // the_file.get ( x ) returns false if the end of the file
+                    //  is reached or an error occurs
+                    while (the_file.get(x))
+                        cout << x;
+                    // the_file is closed implicitly here
+                    cout << "\n\n";
+                } else if (strcmp(argv[1], "-ast") == 0) {
+                    /*
+                     * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
+                     * No headers or footers.
+                     * The AST must match exactly, character for character, the AST produced by rpal.
+                     */
+                    //Call ast generator
                     //Call parser
                     //cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
                     scan(the_file); //Prepare the first token by placing it within 'NT'
@@ -1919,39 +1904,75 @@ void processCSEMachine() {
                     if (checkIfEOF(the_file)) {
 //                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
 //                    exit(1);
-                        cout << "\nThe AST is:\n";
-                        printTree(); //print the AST
-                        convertASTToStandardizedTree();
-                        cout << "\nThe standardized tree (ST) is:\n";
-                        printTree(); //print the standardized tree
-                        cout << "\nGoing to flatten the tree:\n";
-                        flattenStandardizedTree();
-                        cout << "\nThe control structures are:\n";
-                        printControlStructures();
-                        cout << "\nGoing to run the CSE machine now!\n";
-                        runCSEMachine();
-                        cout << "\n\nThe output of the RPAL program is:\n\n";
-                        int output = cseMachineStack.top().intValue;
-                        cout << output << "\n\n\n";
+                        //cout << "\n\nAST Tree should print!\n\n";
+                        printTree();
+
                     } else {
-                        cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
+                        cout <<
+                        "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                         exit(0);
                     }
                 }
             }
         }
-        else if (argc != 2) {
-            /*
-             * p2 (without switches) should produce the result of the program.
-             * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
-             * No headers or footers. The AST must match exactly, character for character, the AST produced by rpal.
-             * Optional switches: -l This produces a listing of the input.
-             */
+    }
+
+
+    else if (argc == 2) {
+        if (argv[1][0] == '-') {
             cout << "\n\nUsages:\n" << argv[0] << " <filename>\n";
             cout << argv[0] << " -ast <filename>\n";
             cout << argv[0] << " -l <filename>\n\n";
         }
-
+        else {
+            /* p2 (without switches) should produce the result of the program. */
+            // We assume argv[2] is a filename to open
+            ifstream the_file(argv[1]);
+            // Always check to see if file opening succeeded
+            if (!the_file.is_open())
+                cout << "\n\nCould not open file: '" << argv[1] << "'" << "\n\n";
+            else {
+                //Call parser
+                //cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
+                scan(the_file); //Prepare the first token by placing it within 'NT'
+                E(the_file);    //Call the first non-terminal procedure to start parsing
+                //cout << " " << NT;
+                if (checkIfEOF(the_file)) {
+//                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
+//                    exit(1);
+                    cout << "\nThe AST is:\n";
+                    printTree(); //print the AST
+                    convertASTToStandardizedTree();
+                    cout << "\nThe standardized tree (ST) is:\n";
+                    printTree(); //print the standardized tree
+                    cout << "\nGoing to flatten the tree:\n";
+                    flattenStandardizedTree();
+                    cout << "\nThe control structures are:\n";
+                    printControlStructures();
+                    cout << "\nGoing to run the CSE machine now!\n";
+                    runCSEMachine();
+                    cout << "\n\nThe output of the RPAL program is:\n\n";
+                    int output = cseMachineStack.top().intValue;
+                    cout << output << "\n\n\n";
+                } else {
+                    cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
+                    exit(0);
+                }
+            }
+        }
     }
+    else if (argc != 2) {
+        /*
+         * p2 (without switches) should produce the result of the program.
+         * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
+         * No headers or footers. The AST must match exactly, character for character, the AST produced by rpal.
+         * Optional switches: -l This produces a listing of the input.
+         */
+        cout << "\n\nUsages:\n" << argv[0] << " <filename>\n";
+        cout << argv[0] << " -ast <filename>\n";
+        cout << argv[0] << " -l <filename>\n\n";
+    }
+
+}
 
 
