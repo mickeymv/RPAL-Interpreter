@@ -1565,7 +1565,7 @@ void processCSEMachine() {
                 cseMachineStack.push(result);
             }
         } else if (operatorNode.isLambda) {     //CSE rule 4
-            cout << "\n Lambda1 \n";
+            //cout << "\n Lambda1 \n";
 
             //TODO: pop additional operands if required
 //            MachineNode secondOperand = cseMachineStack.top();
@@ -1768,6 +1768,27 @@ void processCSEMachine() {
             }
         }
         cseMachineStack.push(result);
+    } else if (controlTop.isConditional) { //CSE rule 8
+        MachineNode booleanNode = cseMachineStack.top();
+        cseMachineStack.pop();
+        MachineNode falseNode = cseMachineControl.top();
+        cseMachineControl.pop();
+        MachineNode trueNode = cseMachineControl.top();
+        cseMachineControl.pop();
+        int controlStructureIndexOfChosenConditional;
+        if (booleanNode.defaultLabel == "true") {
+            //choose the true control structure
+            controlStructureIndexOfChosenConditional = trueNode.indexOfBodyOfLambda;
+        } else if (booleanNode.defaultLabel == "false") {
+            //choose the true control structure
+            controlStructureIndexOfChosenConditional = falseNode.indexOfBodyOfLambda;
+        }
+        // push the 0th control structure's elements
+        std::list<MachineNode>::const_iterator iterator;
+        for (iterator = controlStructures[controlStructureIndexOfChosenConditional].begin(); iterator != controlStructures[controlStructureIndexOfChosenConditional].end(); ++iterator) {
+            MachineNode controlStructureToken = *iterator;
+            cseMachineControl.push(controlStructureToken);
+        }
     }
 }
 
