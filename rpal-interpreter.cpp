@@ -76,6 +76,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     string operatorStringValue;
     string defaultLabel;
     bool isBoolean;
+    bool isBuiltInFunction;
 
     MachineNode() {
         isName = false;
@@ -90,6 +91,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
         isBinaryOperator = false;
         isComma = false;
         isBoolean = false;
+        isBuiltInFunction = false;
     }
 };
 
@@ -1185,7 +1187,8 @@ void printTree() {
 /*
  * Recursively flatten tree.
  */
-void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure, int controlStructureIndex, bool processKid, bool processSiblings) {
+void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure, int controlStructureIndex,
+                            bool processKid, bool processSiblings) {
     cout << "\n in recursivelyFlattenTree for node: " << treeNode->label << ", controlStructure: " <<
     controlStructureIndex << " and size=" << controlStructure->size();
     MachineNode controlStructureNode = MachineNode();
@@ -1378,23 +1381,38 @@ void processCSEMachine() {
             }
         }
         if (!variableValueFound) {
-            cout << "\n\nERROR! Value for bound variable '" << controlTop.nameValue <<
-            "' not found in environment tree! DIE!\n\n";
-            exit(0);
+            //it could be a built-in function defined in the PE [e0]
+            if (controlTop.nameValue == "Print") {
+                controlTop.isBuiltInFunction = true;
+                controlTop.defaultLabel = "Print";
+                cseMachineStack.push(controlTop);
+            } else {
+                cout << "\n\nERROR! Value for bound variable '" << controlTop.nameValue <<
+                "' not found in environment tree! DIE!\n\n";
+                exit(0);
+            }
+        } else {
+            controlTop.intValue = variableValuesMap[controlTop.nameValue];
+            cseMachineStack.push(controlTop);
         }
-        controlTop.intValue = variableValuesMap[controlTop.nameValue];
-        cseMachineStack.push(controlTop);
     } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
         MachineNode stackTop = cseMachineStack.top();
         cseMachineStack.pop();
-        MachineNode stackTopEnvironmentVariable = cseMachineStack.top();
-        cseMachineStack.pop();
-        if (!stackTopEnvironmentVariable.isEnvironmentMarker ||
-            (controlTop.environmentMarkerIndex != stackTopEnvironmentVariable.environmentMarkerIndex)) {
-            cout << "\n ERROR in resolving environment variables on control and stack! Die now! \n";
-            exit(0);
+        if (!stackTop.isEnvironmentMarker) {
+            MachineNode stackTopEnvironmentVariable = cseMachineStack.top();
+            cseMachineStack.pop();
+            if (!stackTopEnvironmentVariable.isEnvironmentMarker ||
+                (controlTop.environmentMarkerIndex != stackTopEnvironmentVariable.environmentMarkerIndex)) {
+                cout << "\n ERROR in resolving environment variables on control and stack! Die now! \n";
+                exit(0);
+            }
+            cseMachineStack.push(stackTop);
+        } else {
+            if (controlTop.environmentMarkerIndex != stackTop.environmentMarkerIndex) {
+                cout << "\n ERROR in resolving environment variables on control and stack! Die now! \n";
+                exit(0);
+            }
         }
-        cseMachineStack.push(stackTop);
     } else if (controlTop.isLambda) {  //CSE rule 2
         controlTop.environmentMarkerIndex = currentEnvironment->environmentIndex; //index of environment in which this lambda holds
         cseMachineStack.push(controlTop);
@@ -1510,8 +1528,8 @@ void processCSEMachine() {
                         result.defaultLabel = firstOperand.intValue <= secondOperand.intValue ? "true" : "false";
                     }
                 } else if (operatorNode.operatorStringValue == "eq") {
-                    if ((!firstOperand.isInt || !secondOperand.isInt) ||
-                        (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+                    if (!((!firstOperand.isInt || !secondOperand.isInt) ||
+                          (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
                         cout << "\n operands not of same type for 'eq' operation! exiting! \n";
                         exit(0);
                     } else {
@@ -1525,8 +1543,8 @@ void processCSEMachine() {
                         }
                     }
                 } else if (operatorNode.operatorStringValue == "ne") {
-                    if ((!firstOperand.isInt || !secondOperand.isInt) ||
-                        (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+                    if (!((!firstOperand.isInt || !secondOperand.isInt) ||
+                          (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
                         cout << "\n operands not of same type for 'ne' operation! exiting! \n";
                         exit(0);
                     } else {
@@ -1604,8 +1622,20 @@ void processCSEMachine() {
                 cseMachineControl.push(controlStructureToken);
             }
             //cout << "\n Lambda6 \n";
+        } else if (operatorNode.isBuiltInFunction) {
+            if (operatorNode.defaultLabel == "Print") {
+                cout << "\n\n";
+                MachineNode nodeToPrint = firstOperand;
+                if (nodeToPrint.isBoolean) {
+                    cout << nodeToPrint.defaultLabel;
+                } else if (nodeToPrint.isInt) {
+                    cout << nodeToPrint.intValue;
+                } else if (nodeToPrint.isString) {
+                    cout << nodeToPrint.stringValue;
+                } //TODO: Printing tuples
+            }
         }
-    }  else if (controlTop.isBinaryOperator) {  //CSE rule 6
+    } else if (controlTop.isBinaryOperator) {  //CSE rule 6
         MachineNode result = MachineNode();
         MachineNode operatorNode = controlTop;
         MachineNode firstOperand = cseMachineStack.top();
@@ -1690,8 +1720,8 @@ void processCSEMachine() {
                 result.defaultLabel = firstOperand.intValue <= secondOperand.intValue ? "true" : "false";
             }
         } else if (operatorNode.operatorStringValue == "eq") {
-            if ((!firstOperand.isInt || !secondOperand.isInt) ||
-                (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+            if (!((!firstOperand.isInt || !secondOperand.isInt) ||
+                  (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
                 cout << "\n operands not of same type for 'eq' operation! exiting! \n";
                 exit(0);
             } else {
@@ -1705,8 +1735,8 @@ void processCSEMachine() {
                 }
             }
         } else if (operatorNode.operatorStringValue == "ne") {
-            if ((!firstOperand.isInt || !secondOperand.isInt) ||
-                (!firstOperand.isBoolean || !secondOperand.isBoolean)) {
+            if (!((!firstOperand.isInt || !secondOperand.isInt) ||
+                  (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
                 cout << "\n operands not of same type for 'ne' operation! exiting! \n";
                 exit(0);
             } else {
@@ -1785,7 +1815,8 @@ void processCSEMachine() {
         }
         // push the 0th control structure's elements
         std::list<MachineNode>::const_iterator iterator;
-        for (iterator = controlStructures[controlStructureIndexOfChosenConditional].begin(); iterator != controlStructures[controlStructureIndexOfChosenConditional].end(); ++iterator) {
+        for (iterator = controlStructures[controlStructureIndexOfChosenConditional].begin();
+             iterator != controlStructures[controlStructureIndexOfChosenConditional].end(); ++iterator) {
             MachineNode controlStructureToken = *iterator;
             cseMachineControl.push(controlStructureToken);
         }
@@ -1863,7 +1894,7 @@ void printControlStructures() {
             } else if (controlStructureToken.isComma) {
                 cout << "COMMA ";
             } else if (controlStructureToken.isConditional) {
-                cout << controlStructureToken.defaultLabel << "[" << controlStructureToken.indexOfBodyOfLambda<<"] ";
+                cout << controlStructureToken.defaultLabel << "[" << controlStructureToken.indexOfBodyOfLambda << "] ";
             }
         }
         cout << "\n";
@@ -1971,9 +2002,9 @@ int main(int argc, char *argv[]) {
                     printControlStructures();
                     cout << "\nGoing to run the CSE machine now!\n";
                     runCSEMachine();
-                    cout << "\n\nThe output of the RPAL program is:\n\n";
-                    int output = cseMachineStack.top().intValue;
-                    cout << output << "\n\n\n";
+//                    cout << "\n\nThe output of the RPAL program is:\n\n";
+//                    int output = cseMachineStack.top().intValue;
+//                    cout << output << "\n\n\n";
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
