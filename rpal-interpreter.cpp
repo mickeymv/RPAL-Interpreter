@@ -65,6 +65,8 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     int indexOfBodyOfLambda; //index of the constrolStructure of this lambda expression
     bool isTau;
     int numberOfVariablesInTau;
+    bool isTuple;
+    std::vector<MachineNode> tupleElements; //can be either int/bool/string
     bool isComma;
     bool isEnvironmentMarker;
     int environmentMarkerIndex;
@@ -92,12 +94,13 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
         isComma = false;
         isBoolean = false;
         isBuiltInFunction = false;
+        isTuple = false;
     }
 };
 
 struct EnvironmentNode { //Node abstraction for an environment marker in the CSE machine
     EnvironmentNode *previousEnvironment;
-    std::map<std::string, int> variableValuesMap;
+    std::map<std::string, MachineNode> variableValuesMap; //the variable can either point to a value (int/bool) or a lambda function
     int environmentIndex;
 };
 
@@ -1367,7 +1370,7 @@ void processCSEMachine() {
         controlTop.isName = false;
         controlTop.isInt = true;
         EnvironmentNode *environmentWithVariableValue = currentEnvironment;
-        std::map<std::string, int> variableValuesMap;
+        std::map<std::string, MachineNode> variableValuesMap;
         bool variableValueFound = false;
         while (environmentWithVariableValue != NULL) {
             variableValuesMap = environmentWithVariableValue->variableValuesMap;
@@ -1392,7 +1395,7 @@ void processCSEMachine() {
                 exit(0);
             }
         } else {
-            controlTop.intValue = variableValuesMap[controlTop.nameValue];
+            controlTop = variableValuesMap[controlTop.nameValue];
             cseMachineStack.push(controlTop);
         }
     } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
@@ -1585,7 +1588,7 @@ void processCSEMachine() {
         } else if (operatorNode.isLambda) {     //CSE rule 4
             //cout << "\n Lambda1 \n";
 
-            //TODO: pop additional operands if required
+            //TODO: pop additional operands if required when there is tau/ comma
 //            MachineNode secondOperand = cseMachineStack.top();
 //            cseMachineStack.pop();
 
@@ -1607,7 +1610,7 @@ void processCSEMachine() {
             newEnvironmentForCurrentLambda->environmentIndex = operatorNode.indexOfBodyOfLambda;
             std::list<string>::const_iterator boundVariableIterator;
             boundVariableIterator = operatorNode.listOfBoundVariables.begin();
-            newEnvironmentForCurrentLambda->variableValuesMap[*boundVariableIterator] = firstOperand.intValue;
+            newEnvironmentForCurrentLambda->variableValuesMap[*boundVariableIterator] = firstOperand;
             //cout << "\n Lambda4 \n";
 
             //add new lambda environment variable to stack
