@@ -61,8 +61,8 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     string stringValue;
     bool isGamma;
     bool isLambda;
-    std::list<string> listOfBoundVariables;
-    int indexOfBodyOfLambda; //index of the constrolStructure of this lambda expression
+    std::vector<string> boundVariables;
+    int indexOfBodyOfLambda; //index of the controlStructure of this lambda expression
     bool isTau;  //refers to the control stack variable which will convert stack elements to tuple
     int numberOfElementsInTauTuple;
     bool isTuple;  //refers to the CSE stack structure variable containing variables
@@ -100,7 +100,9 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
 
 struct EnvironmentNode { //Node abstraction for an environment marker in the CSE machine
     EnvironmentNode *previousEnvironment;
-    std::map<std::string, MachineNode> variableValuesMap; //the variable can either point to a value (int/bool) or a lambda function
+    MachineNode boundedValuesNode;
+    //the bounded values node will have the bounded variable mappings from the boundedVariables string vector to the tupleElements MachineNode vector.
+    // boundedVariables (string) -> tupleElements (MachineNode) [the tupleElement could be int/string/Lambda]
     int environmentIndex;
 };
 
@@ -1195,6 +1197,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
     cout << "\n in recursivelyFlattenTree for node: " << treeNode->label << ", controlStructure: " <<
     controlStructureIndex << " and size=" << controlStructure->size();
     MachineNode controlStructureNode = MachineNode();
+
     controlStructureNode.defaultLabel = treeNode->label;
     if (treeNode->label == "gamma" || treeNode->label == GAMMA_STD_LABEL) {
         controlStructureNode.isGamma = true;
@@ -1207,6 +1210,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.stringValue = controlStructureNode.stringValue.substr(0,
                                                                                    controlStructureNode.stringValue.length() -
                                                                                    1);
+        controlStructureNode.defaultLabel = controlStructureNode.stringValue;
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's a string!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
@@ -1216,6 +1220,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.nameValue = controlStructureNode.nameValue.substr(0,
                                                                                controlStructureNode.nameValue.length() -
                                                                                1);
+        controlStructureNode.defaultLabel = controlStructureNode.nameValue;
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's an identifier!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
@@ -1228,6 +1233,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                      1);
         //cout<<"\n intString= "<<intString;
         controlStructureNode.intValue = std::stoi(intString);
+        controlStructureNode.defaultLabel = intString;
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's an integer!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
@@ -1235,22 +1241,26 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         cout << "\n it's a lambda!";
         processKid = false;
         controlStructureNode.isLambda = true;
+        int numberOfBoundVariables = 0;
         if (treeNode->firstKid->label == ",") {
             cout << "\nIt's a comma node! bound variables!\n";
             Node *boundVariableNode = treeNode->firstKid->firstKid;
             while (boundVariableNode != NULL) {
-                string variable = boundVariableNode->label.substr(4);
+                string variable = boundVariableNode->label.substr(
+                        4);   //bound variables will always start with <ID: and end with >
                 variable = variable.substr(0, variable.length() - 1);
-                controlStructureNode.listOfBoundVariables.push_back(variable);
+                controlStructureNode.boundVariables.push_back(variable);
                 boundVariableNode = boundVariableNode->nextSibling;
             }
         } else { //only one bound variable, which is first child (leftChild)
             cout << "\nthe bound variable for this lambda= " << treeNode->firstKid->label << "\n";
-            string variable = treeNode->firstKid->label.substr(4);
+            string variable = treeNode->firstKid->label.substr(
+                    4);  //bound variables will always start with <ID: and end with >
             variable = variable.substr(0, variable.length() - 1);
-            controlStructureNode.listOfBoundVariables.push_back(variable);
+            controlStructureNode.boundVariables.push_back(variable);
         }
         controlStructureNode.indexOfBodyOfLambda = numberOfControlStructures++;
+        controlStructureNode.numberOfElementsInTauTuple = numberOfBoundVariables;
         controlStructure->push_back(controlStructureNode);
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
         list<MachineNode> *controlStructureOfLambda = new list<MachineNode>;
@@ -1317,6 +1327,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 tupleElementNode.stringValue = tupleElementNode.stringValue.substr(0,
                                                                                    tupleElementNode.stringValue.length() -
                                                                                    1);
+                tupleElementNode.stringValue = tupleElementNode.stringValue;
                 cout << "\n it's a string!";
             } else if (tauElementNode->label.compare(0, 4, "<ID:") == 0) {
                 tupleElementNode.isName = true;
@@ -1324,6 +1335,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 tupleElementNode.nameValue = tupleElementNode.nameValue.substr(0,
                                                                                tupleElementNode.nameValue.length() -
                                                                                1);
+                tupleElementNode.defaultLabel = tupleElementNode.nameValue;
                 cout << "\n it's an identifier!";
             } else if (tauElementNode->label.compare(0, 5, "<INT:") == 0) {
                 tupleElementNode.isInt = true;
@@ -1332,6 +1344,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                              intString.length() -
                                              1);
                 tupleElementNode.intValue = std::stoi(intString);
+                tupleElementNode.defaultLabel = intString;
                 cout << "\n it's an integer!";
             }
             tupleElements.push_back(tupleElementNode);
@@ -1409,19 +1422,25 @@ void processCSEMachine() {
         controlTop.isName = false;
         controlTop.isInt = true;
         EnvironmentNode *environmentWithVariableValue = currentEnvironment;
-        std::map<std::string, MachineNode> variableValuesMap;
+        MachineNode boundedValuesNode;
         bool variableValueFound = false;
+        int indexOfBoundVariable = 0;
+
         while (environmentWithVariableValue != NULL) {
-            variableValuesMap = environmentWithVariableValue->variableValuesMap;
-            if (variableValuesMap.find(controlTop.nameValue) == variableValuesMap.end()) {
-                // not found, check parent environment
-                environmentWithVariableValue = environmentWithVariableValue->previousEnvironment;
-            } else {
-                // found
-                variableValueFound = true;
+            boundedValuesNode = environmentWithVariableValue->boundedValuesNode;
+            for (int i = 0; i < boundedValuesNode.boundVariables.size(); i++) {
+                if (boundedValuesNode.boundVariables[i] == controlTop.nameValue) {
+                    indexOfBoundVariable = i;
+                    variableValueFound = true;
+                }
+            }
+            if (variableValueFound) {
                 break;
+            } else {
+                environmentWithVariableValue = environmentWithVariableValue->previousEnvironment;
             }
         }
+
         if (!variableValueFound) {
             //it could be a built-in function defined in the PE [e0]
             if (controlTop.nameValue == "Print") {
@@ -1434,7 +1453,7 @@ void processCSEMachine() {
                 exit(0);
             }
         } else {
-            controlTop = variableValuesMap[controlTop.nameValue];
+            controlTop = environmentWithVariableValue->boundedValuesNode.tupleElements[indexOfBoundVariable];
             cseMachineStack.push(controlTop);
         }
     } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
@@ -1457,6 +1476,9 @@ void processCSEMachine() {
         }
     } else if (controlTop.isLambda) {  //CSE rule 2
         controlTop.environmentMarkerIndex = currentEnvironment->environmentIndex; //index of environment in which this lambda holds
+        controlTop.defaultLabel =
+                "Lambda with body(" + std::to_string(controlTop.indexOfBodyOfLambda) + ") and bound to " +
+                std::to_string(controlTop.environmentMarkerIndex);
         cseMachineStack.push(controlTop);
     } else if (controlTop.isGamma) {  //CSE rule 3 & 4
         MachineNode result = MachineNode();
@@ -1471,7 +1493,6 @@ void processCSEMachine() {
                         cout << "\n Operand is not int to apply 'neg', EXIT! \n";
                         exit(0);
                     } else {
-
                         result.isInt = true;
                         result.intValue = -firstOperand.intValue;
                     }
@@ -1488,6 +1509,7 @@ void processCSEMachine() {
                         }
                     }
                 }
+                cseMachineStack.push(result);
             }
             else if (operatorNode.isBinaryOperator) {
                 MachineNode secondOperand = cseMachineStack.top();
@@ -1625,13 +1647,7 @@ void processCSEMachine() {
                 cseMachineStack.push(result);
             }
         } else if (operatorNode.isLambda) {     //CSE rule 4
-            //cout << "\n Lambda1 \n";
-
-            //TODO: pop additional operands if required when there is tau/ comma
-//            MachineNode secondOperand = cseMachineStack.top();
-//            cseMachineStack.pop();
-
-
+            
             //cout << "\n Lambda2 \n";
             //add new lambda's environment variable to control
             MachineNode newEnvironmentVariableForCurrentLambda = MachineNode();
@@ -1647,9 +1663,29 @@ void processCSEMachine() {
             newEnvironmentForCurrentLambda->previousEnvironment = currentEnvironment;
             currentEnvironment = newEnvironmentForCurrentLambda;
             newEnvironmentForCurrentLambda->environmentIndex = operatorNode.indexOfBodyOfLambda;
-            std::list<string>::const_iterator boundVariableIterator;
-            boundVariableIterator = operatorNode.listOfBoundVariables.begin();
-            newEnvironmentForCurrentLambda->variableValuesMap[*boundVariableIterator] = firstOperand;
+            newEnvironmentForCurrentLambda->boundedValuesNode = MachineNode();
+            newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables = operatorNode.boundVariables;
+
+            // We have separate cases here instead of just assigning
+            // newEnvironmentForCurrentLambda->boundedValuesNode = firstOperand
+            // because we need to have the boundVariables and the tupleElements in the same boundedValuesNode.
+
+
+            if (operatorNode.boundVariables.size() ==
+                1) { //only one bound variable, then the firstOperand is stored as it is in the tupleElements
+                //first operand could be int/string/tuple
+                newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements.push_back(firstOperand);
+            } else { //there are multiple variable bindings, so the firstOperand must be a tuple and that is what we assign
+                newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements = firstOperand.tupleElements;
+            }
+
+            cout << "\n\nNew environment created, bound variables are:\n";
+            for (int i = 0; i < newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables.size(); i++) {
+                cout << "\n" << newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables[i] << "= " <<
+                newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements[i].defaultLabel <<
+                "\n\n";
+            }
+
             //cout << "\n Lambda4 \n";
 
             //add new lambda environment variable to stack
