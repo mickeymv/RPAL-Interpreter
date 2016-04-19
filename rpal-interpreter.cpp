@@ -63,9 +63,9 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     bool isLambda;
     std::list<string> listOfBoundVariables;
     int indexOfBodyOfLambda; //index of the constrolStructure of this lambda expression
-    bool isTau;
-    int numberOfVariablesInTau;
-    bool isTuple;
+    bool isTau;  //refers to the control stack variable which will convert stack elements to tuple
+    int numberOfElementsInTauTuple;
+    bool isTuple;  //refers to the CSE stack structure variable containing variables
     std::vector<MachineNode> tupleElements; //can be either int/bool/string
     bool isComma;
     bool isEnvironmentMarker;
@@ -1303,8 +1303,47 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "tau") {
         cout << "\n\n ****** Handle TAU! ****** \n\n";
+        processKid = false;
         controlStructureNode.isTau = true;
+        int numberOfElementsInTuple = 0;
+        std::list<MachineNode> tupleElements;
+        Node *tauElementNode = treeNode->firstKid;
+        do {
+            numberOfElementsInTuple++;
+            MachineNode tupleElementNode = MachineNode();
+            if (tauElementNode->label.compare(0, 5, "<STR:") == 0) {
+                tupleElementNode.isString = true;
+                tupleElementNode.stringValue = tauElementNode->label.substr(5);
+                tupleElementNode.stringValue = tupleElementNode.stringValue.substr(0,
+                                                                                   tupleElementNode.stringValue.length() -
+                                                                                   1);
+                cout << "\n it's a string!";
+            } else if (tauElementNode->label.compare(0, 4, "<ID:") == 0) {
+                tupleElementNode.isName = true;
+                tupleElementNode.nameValue = tauElementNode->label.substr(4);
+                tupleElementNode.nameValue = tupleElementNode.nameValue.substr(0,
+                                                                               tupleElementNode.nameValue.length() -
+                                                                               1);
+                cout << "\n it's an identifier!";
+            } else if (tauElementNode->label.compare(0, 5, "<INT:") == 0) {
+                tupleElementNode.isInt = true;
+                string intString = tauElementNode->label.substr(5);
+                intString = intString.substr(0,
+                                             intString.length() -
+                                             1);
+                tupleElementNode.intValue = std::stoi(intString);
+                cout << "\n it's an integer!";
+            }
+            tupleElements.push_back(tupleElementNode);
+            tauElementNode = tauElementNode->nextSibling;
+        } while (tauElementNode != NULL);
+
+        controlStructureNode.numberOfElementsInTauTuple = numberOfElementsInTuple;
         controlStructure->push_back(controlStructureNode);
+        for (std::list<MachineNode>::const_iterator iterator = tupleElements.begin(), end = tupleElements.end();
+             iterator != end; ++iterator) {
+            controlStructure->push_back(*iterator);
+        }
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == ",") {
         cout << "\n\n ****** Handle CommaNode! ****** \n\n";
@@ -1364,7 +1403,7 @@ void processCSEMachine() {
 
     cout << "\n\n Control's top is: " << controlTop.defaultLabel;
 
-    if (controlTop.isInt) { //CSE rule 1 for ints
+    if (controlTop.isInt || controlTop.isString) { //CSE rule 1 for ints
         cseMachineStack.push(controlTop);
     } else if (controlTop.isName) { //CSE rule 1 for variables
         controlTop.isName = false;
@@ -1637,6 +1676,9 @@ void processCSEMachine() {
                     cout << nodeToPrint.stringValue;
                 } //TODO: Printing tuples
             }
+        } else if (operatorNode.isTuple) {  //  CSE rule 10 for Tuple selection
+            result = operatorNode.tupleElements[firstOperand.intValue];
+            cseMachineStack.push(result);
         }
     } else if (controlTop.isBinaryOperator) {  //CSE rule 6
         MachineNode result = MachineNode();
@@ -1823,6 +1865,17 @@ void processCSEMachine() {
             MachineNode controlStructureToken = *iterator;
             cseMachineControl.push(controlStructureToken);
         }
+    } else if (controlTop.isTau) {  //CSE rule 9 for Tau tuple formation on CSE's stack structure
+        int numberOfTupleElements = controlTop.numberOfElementsInTauTuple;
+        //int indexOfElements = 0;
+        while (numberOfTupleElements > 0) {
+            numberOfTupleElements--;
+            controlTop.tupleElements.push_back(cseMachineStack.top());
+            cseMachineStack.pop();
+        }
+        controlTop.isTau = false;
+        controlTop.isTuple = true;
+        cseMachineStack.push(controlTop);
     }
 }
 
