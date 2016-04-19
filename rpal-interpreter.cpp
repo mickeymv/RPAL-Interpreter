@@ -1205,12 +1205,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's a gamma!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
-    } else if (treeNode->label.compare(0, 5, "<STR:") == 0) {
+    } else if (treeNode->label.compare(0, 6, "<STR:'") == 0) {
         controlStructureNode.isString = true;
-        controlStructureNode.stringValue = treeNode->label.substr(5);
+        controlStructureNode.stringValue = treeNode->label.substr(6);
         controlStructureNode.stringValue = controlStructureNode.stringValue.substr(0,
                                                                                    controlStructureNode.stringValue.length() -
-                                                                                   1);
+                                                                                   2);
         controlStructureNode.defaultLabel = controlStructureNode.stringValue;
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's a string!";
@@ -1328,12 +1328,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         do {
             numberOfElementsInTuple++;
             MachineNode tupleElementNode = MachineNode();
-            if (tauElementNode->label.compare(0, 5, "<STR:") == 0) {
+            if (tauElementNode->label.compare(0, 6, "<STR:'") == 0) {
                 tupleElementNode.isString = true;
-                tupleElementNode.stringValue = tauElementNode->label.substr(5);
+                tupleElementNode.stringValue = tauElementNode->label.substr(6);
                 tupleElementNode.stringValue = tupleElementNode.stringValue.substr(0,
                                                                                    tupleElementNode.stringValue.length() -
-                                                                                   1);
+                                                                                   2);
                 tupleElementNode.stringValue = tupleElementNode.stringValue;
                 cout << "\n it's a string!";
             } else if (tauElementNode->label.compare(0, 4, "<ID:") == 0) {
