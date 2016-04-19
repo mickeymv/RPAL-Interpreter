@@ -1647,7 +1647,7 @@ void processCSEMachine() {
                 cseMachineStack.push(result);
             }
         } else if (operatorNode.isLambda) {     //CSE rule 4
-            
+
             //cout << "\n Lambda2 \n";
             //add new lambda's environment variable to control
             MachineNode newEnvironmentVariableForCurrentLambda = MachineNode();
@@ -1710,7 +1710,26 @@ void processCSEMachine() {
                     cout << nodeToPrint.intValue;
                 } else if (nodeToPrint.isString) {
                     cout << nodeToPrint.stringValue;
-                } //TODO: Printing tuples
+                } else if (nodeToPrint.isTuple) {
+                    cout << "(";
+                    for (int i = 0; i < nodeToPrint.tupleElements.size(); i++) {
+                        if (nodeToPrint.isBoolean) {
+                            cout << nodeToPrint.defaultLabel;
+                        } else if (nodeToPrint.isInt) {
+                            cout << nodeToPrint.intValue;
+                        } else if (nodeToPrint.isString) {
+                            cout << nodeToPrint.stringValue;
+                        }
+                        if (i + 1 != nodeToPrint.tupleElements.size()) {
+                            cout << ", ";
+                        }
+                    }
+                    cout << ")";
+                } else {
+                    cout <<
+                    "\n\n ERROR! I don't know how to PRINT the value on stack= " + nodeToPrint.defaultLabel + "\n\n";
+                    exit(0);
+                }
             }
         } else if (operatorNode.isTuple) {  //  CSE rule 10 for Tuple selection
             result = operatorNode.tupleElements[firstOperand.intValue];
