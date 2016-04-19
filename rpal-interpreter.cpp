@@ -874,6 +874,7 @@ void convertFunctionForm(Node *functionFormNode) {
     while (fcnVariableList.size() > 0) {
         Node *newLambdaRightNode = new Node;
         lambdaTemp->firstKid->nextSibling = newLambdaRightNode;
+        newLambdaRightNode->label = LAMBDA_STD_LABEL;
         newLambdaRightNode->nextSibling = NULL;
         lambdaTemp = newLambdaRightNode;
         lambdaTemp->firstKid = fcnVariableList.front();
