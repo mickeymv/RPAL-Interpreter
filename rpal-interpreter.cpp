@@ -1322,11 +1322,15 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         cout << "\n\n ****** Handle TAU! ****** \n\n";
         processKid = false;
         controlStructureNode.isTau = true;
-        MachineNode* tauNode = &controlStructureNode;
-        controlStructure->push_back(*tauNode);
         int numberOfElementsInTuple = 0;
-        std::list<MachineNode> tupleElements;
         Node *tauElementNode = treeNode->firstKid;
+        do {
+            numberOfElementsInTuple++;
+            tauElementNode = tauElementNode->nextSibling;
+        } while (tauElementNode != NULL);
+        controlStructureNode.numberOfElementsInTauTuple = numberOfElementsInTuple;
+        controlStructure->push_back(controlStructureNode);
+        tauElementNode = treeNode->firstKid;
         do {
             numberOfElementsInTuple++;
             MachineNode tupleElementNode = MachineNode();
@@ -1336,10 +1340,11 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 tupleElementNode.stringValue = tupleElementNode.stringValue.substr(0,
                                                                                    tupleElementNode.stringValue.length() -
                                                                                    2);
-                tupleElementNode.stringValue = tupleElementNode.stringValue;
+                tupleElementNode.defaultLabel = tupleElementNode.stringValue;
                 cout << "\n it's a string!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
             } else if (tauElementNode->label.compare(0, 4, "<ID:") == 0) {
                 tupleElementNode.isName = true;
                 tupleElementNode.nameValue = tauElementNode->label.substr(4);
@@ -1349,7 +1354,8 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 tupleElementNode.defaultLabel = tupleElementNode.nameValue;
                 cout << "\n it's an identifier!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
             } else if (tauElementNode->label.compare(0, 5, "<INT:") == 0) {
                 tupleElementNode.isInt = true;
                 string intString = tauElementNode->label.substr(5);
@@ -1360,26 +1366,27 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 tupleElementNode.defaultLabel = intString;
                 cout << "\n it's an integer!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
             } else if (tauElementNode->label == "<true>" || tauElementNode->label == "<false>") {
                 tupleElementNode.isBoolean = true;
                 tupleElementNode.defaultLabel = tauElementNode->label == "<true>" ? "true" : "false";
                 cout << "\n it's a truthValue!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
             } else if (tauElementNode->label == "gamma" || tauElementNode->label == GAMMA_STD_LABEL) {
                 tupleElementNode.isGamma = true;
                 cout << "\n it's a gamma!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
             }
-            tupleElements.push_back(tupleElementNode);
             tauElementNode = tauElementNode->nextSibling;
         } while (tauElementNode != NULL);
-
-        tauNode->numberOfElementsInTauTuple = numberOfElementsInTuple;
 
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == ",") {
@@ -1466,7 +1473,12 @@ void processCSEMachine() {
 
         if (!variableValueFound) {
             //it could be a built-in function defined in the PE [e0]
-            if (controlTop.nameValue == "Print" || controlTop.nameValue == "Conc" || controlTop.nameValue == "Istuple" || controlTop.nameValue == "Isinteger" || controlTop.nameValue == "Istruthvalue" || controlTop.nameValue == "Isstring" || controlTop.nameValue == "Isfunction" || controlTop.nameValue == "Isdummy" || controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" || controlTop.nameValue == "Isdummy") {
+            if (controlTop.nameValue == "Print" || controlTop.nameValue == "Conc" ||
+                controlTop.nameValue == "Istuple" || controlTop.nameValue == "Isinteger" ||
+                controlTop.nameValue == "Istruthvalue" || controlTop.nameValue == "Isstring" ||
+                controlTop.nameValue == "Isfunction" || controlTop.nameValue == "Isdummy" ||
+                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" ||
+                controlTop.nameValue == "Isdummy") {
                 controlTop.isBuiltInFunction = true;
                 controlTop.defaultLabel = controlTop.nameValue;
                 cseMachineStack.push(controlTop);
@@ -1732,34 +1744,41 @@ void processCSEMachine() {
         } else if (operatorNode.isBuiltInFunction) {
             if (operatorNode.defaultLabel == "Print") {
                 cout << "\n\n";
-                MachineNode nodeToPrint = firstOperand;
-                if (nodeToPrint.isBoolean) {
-                    cout << nodeToPrint.defaultLabel;
-                } else if (nodeToPrint.isInt) {
-                    cout << nodeToPrint.intValue;
-                } else if (nodeToPrint.isString) {
-                    cout << nodeToPrint.stringValue;
-                } else if (nodeToPrint.isTuple) {
+                if (firstOperand.isBoolean) {
+                    cout << firstOperand.defaultLabel;
+                } else if (firstOperand.isInt) {
+                    cout << firstOperand.intValue;
+                } else if (firstOperand.isString) {
+                    cout << firstOperand.stringValue;
+                } else if (firstOperand.isTuple) {
                     cout << "(";
-                    for (int i = 0; i < nodeToPrint.tupleElements.size(); i++) {
-                        if (nodeToPrint.isBoolean) {
-                            cout << nodeToPrint.defaultLabel;
-                        } else if (nodeToPrint.isInt) {
-                            cout << nodeToPrint.intValue;
-                        } else if (nodeToPrint.isString) {
-                            cout << nodeToPrint.stringValue;
+                    for (int i = 0; i < firstOperand.tupleElements.size(); i++) {
+                        if (firstOperand.tupleElements[i].isBoolean) {
+                            cout << firstOperand.tupleElements[i].defaultLabel;
+                        } else if (firstOperand.tupleElements[i].isInt) {
+                            cout << firstOperand.tupleElements[i].intValue;
+                        } else if (firstOperand.tupleElements[i].isString) {
+                            cout << firstOperand.tupleElements[i].stringValue;
                         }
-                        if (i + 1 != nodeToPrint.tupleElements.size()) {
+                        if (i + 1 != firstOperand.tupleElements.size()) {
                             cout << ", ";
                         }
                     }
                     cout << ")";
                 } else {
                     cout <<
-                    "\n\n ERROR! I don't know how to PRINT the value on stack= " + nodeToPrint.defaultLabel + "\n\n";
+                    "\n\n ERROR! I don't know how to PRINT the value on stack= " + firstOperand.defaultLabel + "\n\n";
                     exit(0);
                 }
-            } else {
+            } else if (operatorNode.defaultLabel == "Conc") {
+                cseMachineControl.pop(); //to pop out the second gamma node
+                MachineNode secondOperand = cseMachineStack.top();
+                cseMachineStack.pop();
+                result.isString = true;
+                result.stringValue = firstOperand.stringValue + secondOperand.stringValue;
+                cseMachineStack.push(result);
+            }
+            else {
                 cout <<
                 "\n\n AYO!! I haven't defined the behavior of the function= " + operatorNode.defaultLabel + "\n\n";
                 exit(0);
@@ -2152,9 +2171,9 @@ int main(int argc, char *argv[]) {
                     printControlStructures();
                     cout << "\nGoing to run the CSE machine now!\n";
                     runCSEMachine();
-//                    cout << "\n\nThe output of the RPAL program is:\n\n";
-//                    int output = cseMachineStack.top().intValue;
-//                    cout << output << "\n\n\n";
+                    cout << "\n\nThe output of the RPAL program is:\n\n";
+                    int output = cseMachineStack.top().intValue;
+                    cout << output << "\n\n\n";
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
