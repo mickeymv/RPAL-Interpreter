@@ -1237,6 +1237,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's an integer!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+    } else if (treeNode->label == "<true>" || treeNode->label == "<false>") {
+        controlStructureNode.isBoolean = true;
+        controlStructureNode.defaultLabel = treeNode->label == "<true>" ? "true" : "false";
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n it's an integer!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == LAMBDA_STD_LABEL || treeNode->label == "lambda") {
         cout << "\n it's a lambda!";
         processKid = false;
@@ -1416,11 +1422,10 @@ void processCSEMachine() {
 
     cout << "\n\n Control's top is: " << controlTop.defaultLabel;
 
-    if (controlTop.isInt || controlTop.isString) { //CSE rule 1 for ints
+    if (controlTop.isInt || controlTop.isString || controlTop.isBoolean) { //CSE rule 1 for ints, booleans and strings
         cseMachineStack.push(controlTop);
     } else if (controlTop.isName) { //CSE rule 1 for variables
         controlTop.isName = false;
-        controlTop.isInt = true;
         EnvironmentNode *environmentWithVariableValue = currentEnvironment;
         MachineNode boundedValuesNode;
         bool variableValueFound = false;
@@ -1495,6 +1500,7 @@ void processCSEMachine() {
                     } else {
                         result.isInt = true;
                         result.intValue = -firstOperand.intValue;
+                        result.defaultLabel = std::to_string(result.intValue);
                     }
                 } else if (operatorNode.operatorStringValue == "not") {
                     if (!firstOperand.isBoolean) {
@@ -1522,6 +1528,7 @@ void processCSEMachine() {
                     } else {
                         result.isInt = true;
                         result.intValue = pow(firstOperand.intValue, secondOperand.intValue);
+                        result.defaultLabel = std::to_string(result.intValue);
                     }
                 } else if (operatorNode.operatorStringValue == "*") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1530,6 +1537,7 @@ void processCSEMachine() {
                     } else {
                         result.isInt = true;
                         result.intValue = firstOperand.intValue * secondOperand.intValue;
+                        result.defaultLabel = std::to_string(result.intValue);
                     }
                 } else if (operatorNode.operatorStringValue == "-") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1538,6 +1546,7 @@ void processCSEMachine() {
                     } else {
                         result.isInt = true;
                         result.intValue = firstOperand.intValue - secondOperand.intValue;
+                        result.defaultLabel = std::to_string(result.intValue);
                     }
                 } else if (operatorNode.operatorStringValue == "+") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1546,6 +1555,7 @@ void processCSEMachine() {
                     } else {
                         result.isInt = true;
                         result.intValue = firstOperand.intValue + secondOperand.intValue;
+                        result.defaultLabel = std::to_string(result.intValue);
                     }
                 } else if (operatorNode.operatorStringValue == "/") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1554,6 +1564,7 @@ void processCSEMachine() {
                     } else {
                         result.isInt = true;
                         result.intValue = firstOperand.intValue / secondOperand.intValue;
+                        result.defaultLabel = std::to_string(result.intValue);
                     }
                 } else if (operatorNode.operatorStringValue == "gr") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1750,6 +1761,7 @@ void processCSEMachine() {
             } else {
                 result.isInt = true;
                 result.intValue = pow(firstOperand.intValue, secondOperand.intValue);
+                result.defaultLabel = std::to_string(result.intValue);
             }
         } else if (operatorNode.operatorStringValue == "*") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1758,6 +1770,7 @@ void processCSEMachine() {
             } else {
                 result.isInt = true;
                 result.intValue = firstOperand.intValue * secondOperand.intValue;
+                result.defaultLabel = std::to_string(result.intValue);
             }
         } else if (operatorNode.operatorStringValue == "-") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1766,6 +1779,7 @@ void processCSEMachine() {
             } else {
                 result.isInt = true;
                 result.intValue = firstOperand.intValue - secondOperand.intValue;
+                result.defaultLabel = std::to_string(result.intValue);
             }
         } else if (operatorNode.operatorStringValue == "+") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1774,6 +1788,7 @@ void processCSEMachine() {
             } else {
                 result.isInt = true;
                 result.intValue = firstOperand.intValue + secondOperand.intValue;
+                result.defaultLabel = std::to_string(result.intValue);
             }
         } else if (operatorNode.operatorStringValue == "/") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1782,6 +1797,7 @@ void processCSEMachine() {
             } else {
                 result.isInt = true;
                 result.intValue = firstOperand.intValue / secondOperand.intValue;
+                result.defaultLabel = std::to_string(result.intValue);
             }
         } else if (operatorNode.operatorStringValue == "gr") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1883,6 +1899,7 @@ void processCSEMachine() {
             } else {
                 result.isInt = true;
                 result.intValue = -firstOperand.intValue;
+                result.defaultLabel = std::to_string(result.intValue);
             }
         } else if (operatorNode.operatorStringValue == "not") {
             if (!firstOperand.isBoolean) {
