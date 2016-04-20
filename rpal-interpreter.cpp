@@ -81,6 +81,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     bool isBuiltInFunction;
     bool isY;
     bool isYF;
+    bool isDummy;
 
     MachineNode() {
         isName = false;
@@ -99,6 +100,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
         isTuple = false;
         isY = false;
         isYF = false;
+        isDummy = false;
     }
 };
 
@@ -113,10 +115,10 @@ struct EnvironmentNode { //Node abstraction for an environment marker in the CSE
 
 stack<Node *> trees; //Stack of trees used to manipulate the AST/ST generation.
 
-std::vector<std::list<MachineNode> > controlStructures(20); //each controlStructure would be a list of machineNodes
+std::vector<std::list<MachineNode> > controlStructures(50); //each controlStructure would be a list of machineNodes
 int numberOfControlStructures = 1;
 
-EnvironmentNode *environments[20];
+EnvironmentNode *environments[150];
 
 stack<MachineNode> cseMachineControl; //the Control stack of the CSE machine
 stack<MachineNode> cseMachineStack; //the "Stack" stack of values of the CSE machine
@@ -1268,6 +1270,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's nil!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+    } else if (treeNode->label == "<dummy>") {
+        controlStructureNode.isDummy = true;
+        controlStructureNode.defaultLabel = "dummy";
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n it's nil!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == LAMBDA_STD_LABEL || treeNode->label == "lambda") {
         cout << "\n it's a lambda!";
         processKid = false;
@@ -1362,6 +1370,8 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
             tauElementNode = tauElementNode->nextSibling;
         } while (tauElementNode != NULL);
         controlStructureNode.numberOfElementsInTauTuple = numberOfElementsInTuple;
+        controlStructureNode.defaultLabel =
+                "TAU[" + std::to_string(controlStructureNode.numberOfElementsInTauTuple) + "]";
         controlStructure->push_back(controlStructureNode);
         tauElementNode = treeNode->firstKid;
         do {
@@ -1500,7 +1510,8 @@ void processCSEMachine() {
 
     cout << "\n\n Control's top is: " << controlTop.defaultLabel;
 
-    if (controlTop.isInt || controlTop.isString || controlTop.isBoolean) { //CSE rule 1 for ints, booleans and strings
+    if (controlTop.isInt || controlTop.isString || controlTop.isBoolean ||
+        controlTop.isDummy) { //CSE rule 1 for ints, booleans, dummy and strings
         cseMachineStack.push(controlTop);
     } else if (controlTop.isY) {
         cseMachineStack.push(controlTop);
@@ -1537,8 +1548,7 @@ void processCSEMachine() {
                 controlTop.nameValue == "Istuple" || controlTop.nameValue == "Isinteger" ||
                 controlTop.nameValue == "Istruthvalue" || controlTop.nameValue == "Isstring" ||
                 controlTop.nameValue == "Isfunction" || controlTop.nameValue == "Isdummy" ||
-                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" ||
-                controlTop.nameValue == "Isdummy" || controlTop.nameValue == "Order") {
+                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" || controlTop.nameValue == "Order") {
                 controlTop.isBuiltInFunction = true;
                 controlTop.defaultLabel = controlTop.nameValue;
                 cseMachineStack.push(controlTop);
@@ -1639,7 +1649,7 @@ void processCSEMachine() {
                         if (firstOperand.numberOfElementsInTauTuple == 0) { //if the first operand is nil
                             result.tupleElements.push_back(secondOperand);
                         } else {
-                            result.tupleElements =  firstOperand.tupleElements;
+                            result.tupleElements = firstOperand.tupleElements;
                             result.tupleElements.push_back(secondOperand);
                         }
                         result.defaultLabel = "TupleOfSize=" + std::to_string(result.numberOfElementsInTauTuple);
@@ -1846,6 +1856,8 @@ void processCSEMachine() {
                     cout << firstOperand.intValue;
                 } else if (firstOperand.isString) {
                     cout << firstOperand.stringValue;
+                } else if (firstOperand.isDummy) {
+                    //Do nothing
                 } else if (firstOperand.isTuple) {
                     if (firstOperand.tupleElements.size() == 0) {
                         cout << "nil"; //empty tuple
@@ -1877,8 +1889,7 @@ void processCSEMachine() {
                 result.isString = true;
                 result.stringValue = firstOperand.stringValue + secondOperand.stringValue;
                 cseMachineStack.push(result);
-            }
-            if (operatorNode.defaultLabel == "Order") {
+            } else if (operatorNode.defaultLabel == "Order") {
                 if (!firstOperand.isTuple) {
                     cout << "\n\n Error! can't apply 'Order' to a datatype other than tuple! DIE NO! \n\n ";
                     exit(0);
@@ -1934,7 +1945,7 @@ void processCSEMachine() {
                 if (firstOperand.numberOfElementsInTauTuple == 0) { //if the first operand is nil
                     result.tupleElements.push_back(secondOperand);
                 } else {
-                    result.tupleElements =  firstOperand.tupleElements;
+                    result.tupleElements = firstOperand.tupleElements;
                     result.tupleElements.push_back(secondOperand);
                 }
                 result.defaultLabel = "TupleOfSize=" + std::to_string(result.numberOfElementsInTauTuple);
@@ -2106,15 +2117,27 @@ void processCSEMachine() {
         }
     } else if (controlTop.isTau) {  //CSE rule 9 for Tau tuple formation on CSE's stack structure
         int numberOfTupleElements = controlTop.numberOfElementsInTauTuple;
-        //int indexOfElements = 0;
-        while (numberOfTupleElements > 0) {
-            numberOfTupleElements--;
-            controlTop.tupleElements.push_back(cseMachineStack.top());
+        //TODO: This checking for if the popped elements are environmentMarkers and working around it was added to handle the 'recurs.1'
+        //program. In that program, the tau selection didn't have enough elements for it on the stack. Is this the actual way to do it?
+        stack<MachineNode> environmentVariablesToBePushedBackToStack;
+        while (numberOfTupleElements > 0 && !cseMachineStack.empty()) {
+            MachineNode poppedStackElement = cseMachineStack.top();
             cseMachineStack.pop();
+            if (!poppedStackElement.isEnvironmentMarker) {
+                numberOfTupleElements--;
+                controlTop.tupleElements.push_back(poppedStackElement);
+            } else {
+                environmentVariablesToBePushedBackToStack.push(poppedStackElement);
+            }
         }
         controlTop.isTau = false;
         controlTop.isTuple = true;
-        controlTop.defaultLabel = "TupleOfSize=" + std::to_string(controlTop.numberOfElementsInTauTuple);
+        controlTop.defaultLabel = "TupleOfSize=" + std::to_string(controlTop.tupleElements.size());
+        controlTop.numberOfElementsInTauTuple = controlTop.tupleElements.size();
+        while (!environmentVariablesToBePushedBackToStack.empty()) {
+            cseMachineStack.push(environmentVariablesToBePushedBackToStack.top());
+            environmentVariablesToBePushedBackToStack.pop();
+        }
         cseMachineStack.push(controlTop);
     }
 }
@@ -2193,7 +2216,7 @@ void printControlStructures() {
                 cout << "COMMA ";
             } else if (controlStructureToken.isConditional) {
                 cout << controlStructureToken.defaultLabel << "[" << controlStructureToken.indexOfBodyOfLambda << "] ";
-            } else if (controlStructureToken.isY) {
+            } else if (controlStructureToken.isY || controlStructureToken.isDummy) {
                 cout << controlStructureToken.defaultLabel << " ";
             }
         }

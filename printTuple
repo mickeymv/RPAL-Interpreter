@@ -1,0 +1,1 @@
+let p a = a eq 1 -> dummy | (Print 2) in (Print 1, Print 2, p 1, Print 3)
