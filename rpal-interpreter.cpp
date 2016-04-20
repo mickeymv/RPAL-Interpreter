@@ -1261,6 +1261,13 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's a truthValue!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+    } else if (treeNode->label == "<nil>") {
+        controlStructureNode.isTuple = true;
+        controlStructureNode.defaultLabel = "nil";
+        controlStructureNode.numberOfElementsInTauTuple = 0;
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n it's nil!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == LAMBDA_STD_LABEL || treeNode->label == "lambda") {
         cout << "\n it's a lambda!";
         processKid = false;
@@ -1410,18 +1417,21 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
                 cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
-            } else if (tauElementNode->label == "aug" || tauElementNode->label == "or" || tauElementNode->label == "&" ||
-                    tauElementNode->label == "gr" ||
-                    tauElementNode->label == "ge" || tauElementNode->label == "ls" || tauElementNode->label == "le" ||
-                    tauElementNode->label == "eq" ||
-                    tauElementNode->label == "ne" || tauElementNode->label == "+" || tauElementNode->label == "-" ||
-                    tauElementNode->label == "*" ||
-                    tauElementNode->label == "/" || tauElementNode->label == "**") {
+            } else if (tauElementNode->label == "aug" || tauElementNode->label == "or" ||
+                       tauElementNode->label == "&" ||
+                       tauElementNode->label == "gr" ||
+                       tauElementNode->label == "ge" || tauElementNode->label == "ls" ||
+                       tauElementNode->label == "le" ||
+                       tauElementNode->label == "eq" ||
+                       tauElementNode->label == "ne" || tauElementNode->label == "+" || tauElementNode->label == "-" ||
+                       tauElementNode->label == "*" ||
+                       tauElementNode->label == "/" || tauElementNode->label == "**") {
                 cout << "\n it's a " << tauElementNode->label;
                 tupleElementNode.isBinaryOperator = true;
                 tupleElementNode.operatorStringValue = tauElementNode->label;
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
                 cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
@@ -1493,6 +1503,8 @@ void processCSEMachine() {
     if (controlTop.isInt || controlTop.isString || controlTop.isBoolean) { //CSE rule 1 for ints, booleans and strings
         cseMachineStack.push(controlTop);
     } else if (controlTop.isY) {
+        cseMachineStack.push(controlTop);
+    } else if (controlTop.isTuple) { //CSE rule 1 for 'nil', which can be the only tuple in a control structure
         cseMachineStack.push(controlTop);
     } else if (controlTop.isName) { //CSE rule 1 for variables
         controlTop.isName = false;
@@ -1598,7 +1610,6 @@ void processCSEMachine() {
             else if (operatorNode.isBinaryOperator) {
                 MachineNode secondOperand = cseMachineStack.top();
                 cseMachineStack.pop();
-                //node->label == "aug" ||
                 if (operatorNode.operatorStringValue == "**") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
                         cout << "\n operands not int for ** operation! exiting! \n";
@@ -1616,6 +1627,22 @@ void processCSEMachine() {
                         result.isInt = true;
                         result.intValue = firstOperand.intValue * secondOperand.intValue;
                         result.defaultLabel = std::to_string(result.intValue);
+                    }
+                } else if (operatorNode.operatorStringValue == "aug") {
+                    if (!firstOperand.isTuple) {
+                        cout << "\n first Operand is not a tuple for 'aug' operation! exiting! \n";
+                        exit(0);
+                    } else {
+                        result.isTuple = true;
+                        result.numberOfElementsInTauTuple = firstOperand.numberOfElementsInTauTuple + 1;
+
+                        if (firstOperand.numberOfElementsInTauTuple == 0) { //if the first operand is nil
+                            result.tupleElements.push_back(secondOperand);
+                        } else {
+                            result.tupleElements =  firstOperand.tupleElements;
+                            result.tupleElements.push_back(secondOperand);
+                        }
+                        result.defaultLabel = "TupleOfSize=" + std::to_string(result.numberOfElementsInTauTuple);
                     }
                 } else if (operatorNode.operatorStringValue == "-") {
                     if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -1771,7 +1798,8 @@ void processCSEMachine() {
                 newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements = firstOperand.tupleElements;
             }
 
-            cout << "\n\nNew environment[" + std::to_string(newEnvironmentForCurrentLambda->environmentIndex) + "] created with parent environment[" +
+            cout << "\n\nNew environment[" + std::to_string(newEnvironmentForCurrentLambda->environmentIndex) +
+                    "] created with parent environment[" +
                     std::to_string(operatorNode.environmentMarkerIndex) + "], bound variables are:\n";
             for (int i = 0; i < newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables.size(); i++) {
                 cout << "\n" << newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables[i] << "= " <<
@@ -1819,20 +1847,24 @@ void processCSEMachine() {
                 } else if (firstOperand.isString) {
                     cout << firstOperand.stringValue;
                 } else if (firstOperand.isTuple) {
-                    cout << "(";
-                    for (int i = 0; i < firstOperand.tupleElements.size(); i++) {
-                        if (firstOperand.tupleElements[i].isBoolean) {
-                            cout << firstOperand.tupleElements[i].defaultLabel;
-                        } else if (firstOperand.tupleElements[i].isInt) {
-                            cout << firstOperand.tupleElements[i].intValue;
-                        } else if (firstOperand.tupleElements[i].isString) {
-                            cout << firstOperand.tupleElements[i].stringValue;
+                    if (firstOperand.tupleElements.size() == 0) {
+                        cout << "nil"; //empty tuple
+                    } else {
+                        cout << "(";
+                        for (int i = 0; i < firstOperand.tupleElements.size(); i++) {
+                            if (firstOperand.tupleElements[i].isBoolean) {
+                                cout << firstOperand.tupleElements[i].defaultLabel;
+                            } else if (firstOperand.tupleElements[i].isInt) {
+                                cout << firstOperand.tupleElements[i].intValue;
+                            } else if (firstOperand.tupleElements[i].isString) {
+                                cout << firstOperand.tupleElements[i].stringValue;
+                            }
+                            if (i + 1 != firstOperand.tupleElements.size()) {
+                                cout << ", ";
+                            }
                         }
-                        if (i + 1 != firstOperand.tupleElements.size()) {
-                            cout << ", ";
-                        }
+                        cout << ")";
                     }
-                    cout << ")";
                 } else {
                     cout <<
                     "\n\n ERROR! I don't know how to PRINT the value on stack= " + firstOperand.defaultLabel + "\n\n";
@@ -1845,9 +1877,10 @@ void processCSEMachine() {
                 result.isString = true;
                 result.stringValue = firstOperand.stringValue + secondOperand.stringValue;
                 cseMachineStack.push(result);
-            } if (operatorNode.defaultLabel == "Order") {
+            }
+            if (operatorNode.defaultLabel == "Order") {
                 if (!firstOperand.isTuple) {
-                    cout<<"\n\n Error! can't apply 'Order' to a datatype other than tuple! DIE NO! \n\n ";
+                    cout << "\n\n Error! can't apply 'Order' to a datatype other than tuple! DIE NO! \n\n ";
                     exit(0);
                 } else {
                     result.isInt = true;
@@ -1872,7 +1905,6 @@ void processCSEMachine() {
         cseMachineStack.pop();
         MachineNode secondOperand = cseMachineStack.top();
         cseMachineStack.pop();
-        //node->label == "aug" ||
         if (operatorNode.operatorStringValue == "**") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
                 cout << "\n operands not int for '**' operation! exiting! \n";
@@ -1890,6 +1922,22 @@ void processCSEMachine() {
                 result.isInt = true;
                 result.intValue = firstOperand.intValue * secondOperand.intValue;
                 result.defaultLabel = std::to_string(result.intValue);
+            }
+        } else if (operatorNode.operatorStringValue == "aug") {
+            if (!firstOperand.isTuple) {
+                cout << "\n first Operand is not a tuple for 'aug' operation! exiting! \n";
+                exit(0);
+            } else {
+                result.isTuple = true;
+                result.numberOfElementsInTauTuple = firstOperand.numberOfElementsInTauTuple + 1;
+
+                if (firstOperand.numberOfElementsInTauTuple == 0) { //if the first operand is nil
+                    result.tupleElements.push_back(secondOperand);
+                } else {
+                    result.tupleElements =  firstOperand.tupleElements;
+                    result.tupleElements.push_back(secondOperand);
+                }
+                result.defaultLabel = "TupleOfSize=" + std::to_string(result.numberOfElementsInTauTuple);
             }
         } else if (operatorNode.operatorStringValue == "-") {
             if (!firstOperand.isInt || !secondOperand.isInt) {
@@ -2139,6 +2187,8 @@ void printControlStructures() {
                 cout << controlStructureToken.operatorStringValue << " ";
             } else if (controlStructureToken.isTau) {
                 cout << "TAU[" + std::to_string(controlStructureToken.numberOfElementsInTauTuple) + "] ";
+            } else if (controlStructureToken.isTuple) {
+                cout << "nil "; //the only tuple which can occur within a control structure is 'nil'
             } else if (controlStructureToken.isComma) {
                 cout << "COMMA ";
             } else if (controlStructureToken.isConditional) {
