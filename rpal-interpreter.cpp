@@ -79,6 +79,8 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     string defaultLabel;
     bool isBoolean;
     bool isBuiltInFunction;
+    bool isY;
+    bool isYF;
 
     MachineNode() {
         isName = false;
@@ -95,6 +97,8 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
         isBoolean = false;
         isBuiltInFunction = false;
         isTuple = false;
+        isY = false;
+        isYF = false;
     }
 };
 
@@ -1058,6 +1062,7 @@ void convertRecExpression(Node *recNode) {
 
     Node *rightGammaChild = new Node;
     rightGammaChild->label = GAMMA_STD_LABEL;
+    rightGammaChild->nextSibling = NULL;
     Node *rightRightLambdaChild = new Node;
     rightRightLambdaChild->label = LAMBDA_STD_LABEL;
     rightRightLambdaChild->nextSibling = NULL;
@@ -1067,7 +1072,6 @@ void convertRecExpression(Node *recNode) {
     leftChildYNode->firstKid = NULL;
 
     rightGammaChild->firstKid = leftChildYNode;
-    rightGammaChild->nextSibling = NULL;
     leftChildYNode->nextSibling = rightRightLambdaChild;
 
     Node *functionNameNode = new Node;
@@ -1208,6 +1212,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.isGamma = true;
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's a gamma!";
+        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+    } else if (treeNode->label == "Y") {
+        controlStructureNode.isY = true;
+        controlStructureNode.defaultLabel = "Y";
+        controlStructure->push_back(controlStructureNode);
+        cout << "\n it's a Y!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 6, "<STR:'") == 0) {
         controlStructureNode.isString = true;
@@ -1463,6 +1473,8 @@ void processCSEMachine() {
     cout << "\n\n Control's top is: " << controlTop.defaultLabel;
 
     if (controlTop.isInt || controlTop.isString || controlTop.isBoolean) { //CSE rule 1 for ints, booleans and strings
+        cseMachineStack.push(controlTop);
+    } else if (controlTop.isY) { 
         cseMachineStack.push(controlTop);
     } else if (controlTop.isName) { //CSE rule 1 for variables
         controlTop.isName = false;
@@ -1734,6 +1746,7 @@ void processCSEMachine() {
                 //first operand could be int/string/tuple
                 newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements.push_back(firstOperand);
             } else { //there are multiple variable bindings, so the firstOperand must be a tuple and that is what we assign
+                // CSE Rule 11 (n-ary function)
                 newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements = firstOperand.tupleElements;
             }
 
@@ -1758,6 +1771,22 @@ void processCSEMachine() {
                 cseMachineControl.push(controlStructureToken);
             }
             //cout << "\n Lambda6 \n";
+        } else if (operatorNode.isY) { //CSE rule 12 (applying Y)
+            firstOperand.isYF = true;
+            firstOperand.isLambda = false;
+            cseMachineStack.push(firstOperand);
+        } else if (operatorNode.isYF) { //CSE rule 13 (applying f.p.)
+            cseMachineStack.push(firstOperand);
+            cseMachineStack.push(operatorNode);
+            MachineNode lambdaNode = operatorNode;
+            lambdaNode.isYF = false;
+            lambdaNode.isLambda = true;
+            cseMachineStack.push(lambdaNode);
+            MachineNode gammaNode = MachineNode();
+            gammaNode.isGamma = true;
+            gammaNode.defaultLabel = "gamma";
+            cseMachineControl.push(gammaNode);
+            cseMachineControl.push(gammaNode);
         } else if (operatorNode.isBuiltInFunction) {
             if (operatorNode.defaultLabel == "Print") {
                 cout << "\n\n";
@@ -2081,6 +2110,8 @@ void printControlStructures() {
                 cout << "COMMA ";
             } else if (controlStructureToken.isConditional) {
                 cout << controlStructureToken.defaultLabel << "[" << controlStructureToken.indexOfBodyOfLambda << "] ";
+            } else if (controlStructureToken.isY) {
+                cout << controlStructureToken.defaultLabel << " ";
             }
         }
         cout << "\n";
