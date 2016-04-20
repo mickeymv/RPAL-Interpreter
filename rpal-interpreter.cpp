@@ -111,6 +111,8 @@ stack<Node *> trees; //Stack of trees used to manipulate the AST/ST generation.
 std::vector<std::list<MachineNode> > controlStructures(20); //each controlStructure would be a list of machineNodes
 int numberOfControlStructures = 1;
 
+EnvironmentNode *environments[20];
+
 stack<MachineNode> cseMachineControl; //the Control stack of the CSE machine
 stack<MachineNode> cseMachineStack; //the "Stack" stack of values of the CSE machine
 
@@ -1254,6 +1256,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
             cout << "\nIt's a comma node! bound variables!\n";
             Node *boundVariableNode = treeNode->firstKid->firstKid;
             while (boundVariableNode != NULL) {
+                numberOfBoundVariables++;
                 string variable = boundVariableNode->label.substr(
                         4);   //bound variables will always start with <ID: and end with >
                 variable = variable.substr(0, variable.length() - 1);
@@ -1261,6 +1264,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 boundVariableNode = boundVariableNode->nextSibling;
             }
         } else { //only one bound variable, which is first child (leftChild)
+            numberOfBoundVariables++;
             cout << "\nthe bound variable for this lambda= " << treeNode->firstKid->label << "\n";
             string variable = treeNode->firstKid->label.substr(
                     4);  //bound variables will always start with <ID: and end with >
@@ -1269,6 +1273,13 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         }
         controlStructureNode.indexOfBodyOfLambda = numberOfControlStructures++;
         controlStructureNode.numberOfElementsInTauTuple = numberOfBoundVariables;
+        string boundVariables;
+        for (int i = 0; i < numberOfBoundVariables; i++) {
+            boundVariables += controlStructureNode.boundVariables[i] + " ";
+        }
+        controlStructureNode.defaultLabel =
+                "Lambda with bound variables(" + boundVariables + ") and body(" +
+                std::to_string(controlStructureNode.indexOfBodyOfLambda) + ")";
         controlStructure->push_back(controlStructureNode);
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
         list<MachineNode> *controlStructureOfLambda = new list<MachineNode>;
@@ -1419,6 +1430,7 @@ void initializeCSEMachine() {
     //initialize environment with the primitive environment (PE / e0)
     currentEnvironment->environmentIndex = 0;
     currentEnvironment->previousEnvironment = NULL;
+    environments[0] = currentEnvironment;
 
 //initialize control.
     //push the first token as the e0 environment variable
@@ -1463,6 +1475,7 @@ void processCSEMachine() {
                 if (boundedValuesNode.boundVariables[i] == controlTop.nameValue) {
                     indexOfBoundVariable = i;
                     variableValueFound = true;
+                    break;
                 }
             }
             if (variableValueFound) {
@@ -1512,9 +1525,6 @@ void processCSEMachine() {
         }
     } else if (controlTop.isLambda) {  //CSE rule 2
         controlTop.environmentMarkerIndex = currentEnvironment->environmentIndex; //index of environment in which this lambda holds
-        controlTop.defaultLabel =
-                "Lambda with body(" + std::to_string(controlTop.indexOfBodyOfLambda) + ") and bound to " +
-                std::to_string(controlTop.environmentMarkerIndex);
         cseMachineStack.push(controlTop);
     } else if (controlTop.isGamma) {  //CSE rule 3 & 4
         MachineNode result = MachineNode();
@@ -1702,11 +1712,12 @@ void processCSEMachine() {
 
             //update currentEnvironment
             EnvironmentNode *newEnvironmentForCurrentLambda = new EnvironmentNode();
-            newEnvironmentForCurrentLambda->previousEnvironment = currentEnvironment;
+            newEnvironmentForCurrentLambda->previousEnvironment = environments[operatorNode.environmentMarkerIndex];
             currentEnvironment = newEnvironmentForCurrentLambda;
             newEnvironmentForCurrentLambda->environmentIndex = operatorNode.indexOfBodyOfLambda;
             newEnvironmentForCurrentLambda->boundedValuesNode = MachineNode();
             newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables = operatorNode.boundVariables;
+            environments[newEnvironmentForCurrentLambda->environmentIndex] = newEnvironmentForCurrentLambda;
 
             // We have separate cases here instead of just assigning
             // newEnvironmentForCurrentLambda->boundedValuesNode = firstOperand
