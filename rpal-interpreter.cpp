@@ -1212,6 +1212,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
     controlStructureNode.defaultLabel = treeNode->label;
     if (treeNode->label == "gamma" || treeNode->label == GAMMA_STD_LABEL) {
         controlStructureNode.isGamma = true;
+        controlStructureNode.defaultLabel = "gamma";
         controlStructure->push_back(controlStructureNode);
         cout << "\n it's a gamma!";
         cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
@@ -1288,7 +1289,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.numberOfElementsInTauTuple = numberOfBoundVariables;
         string boundVariables;
         for (int i = 0; i < numberOfBoundVariables; i++) {
-            boundVariables += controlStructureNode.boundVariables[i] + " ";
+            boundVariables += controlStructureNode.boundVariables[i] + ", ";
         }
         controlStructureNode.defaultLabel =
                 "Lambda with bound variables(" + boundVariables + ") and body(" +
@@ -1357,7 +1358,6 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructure->push_back(controlStructureNode);
         tauElementNode = treeNode->firstKid;
         do {
-            numberOfElementsInTuple++;
             MachineNode tupleElementNode = MachineNode();
             if (tauElementNode->label.compare(0, 6, "<STR:'") == 0) {
                 tupleElementNode.isString = true;
@@ -1403,9 +1403,25 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
             } else if (tauElementNode->label == "gamma" || tauElementNode->label == GAMMA_STD_LABEL) {
                 tupleElementNode.isGamma = true;
                 cout << "\n it's a gamma!";
+                tupleElementNode.defaultLabel = "gamma";
                 controlStructure->push_back(tupleElementNode);
                 cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
+                recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+                controlStructure->size();
+            } else if (tauElementNode->label == "aug" || tauElementNode->label == "or" || tauElementNode->label == "&" ||
+                    tauElementNode->label == "gr" ||
+                    tauElementNode->label == "ge" || tauElementNode->label == "ls" || tauElementNode->label == "le" ||
+                    tauElementNode->label == "eq" ||
+                    tauElementNode->label == "ne" || tauElementNode->label == "+" || tauElementNode->label == "-" ||
+                    tauElementNode->label == "*" ||
+                    tauElementNode->label == "/" || tauElementNode->label == "**") {
+                cout << "\n it's a " << tauElementNode->label;
+                tupleElementNode.isBinaryOperator = true;
+                tupleElementNode.operatorStringValue = tauElementNode->label;
+                controlStructure->push_back(tupleElementNode);
+                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
                 cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
@@ -1510,7 +1526,7 @@ void processCSEMachine() {
                 controlTop.nameValue == "Istruthvalue" || controlTop.nameValue == "Isstring" ||
                 controlTop.nameValue == "Isfunction" || controlTop.nameValue == "Isdummy" ||
                 controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" ||
-                controlTop.nameValue == "Isdummy") {
+                controlTop.nameValue == "Isdummy" || controlTop.nameValue == "Order") {
                 controlTop.isBuiltInFunction = true;
                 controlTop.defaultLabel = controlTop.nameValue;
                 cseMachineStack.push(controlTop);
@@ -1520,7 +1536,9 @@ void processCSEMachine() {
                 exit(0);
             }
         } else {
+            cout << "\n\n Value of " << controlTop.nameValue << " is= ";
             controlTop = environmentWithVariableValue->boundedValuesNode.tupleElements[indexOfBoundVariable];
+            cout << controlTop.defaultLabel << "\n\n";
             cseMachineStack.push(controlTop);
         }
     } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
@@ -1827,6 +1845,16 @@ void processCSEMachine() {
                 result.isString = true;
                 result.stringValue = firstOperand.stringValue + secondOperand.stringValue;
                 cseMachineStack.push(result);
+            } if (operatorNode.defaultLabel == "Order") {
+                if (!firstOperand.isTuple) {
+                    cout<<"\n\n Error! can't apply 'Order' to a datatype other than tuple! DIE NO! \n\n ";
+                    exit(0);
+                } else {
+                    result.isInt = true;
+                    result.intValue = firstOperand.numberOfElementsInTauTuple;
+                    result.defaultLabel = std::to_string(result.intValue);
+                    cseMachineStack.push(result);
+                }
             }
             else {
                 cout <<
@@ -1834,7 +1862,7 @@ void processCSEMachine() {
                 exit(0);
             }
         } else if (operatorNode.isTuple) {  //  CSE rule 10 for Tuple selection
-            result = operatorNode.tupleElements[firstOperand.intValue];
+            result = operatorNode.tupleElements[firstOperand.intValue - 1];
             cseMachineStack.push(result);
         }
     } else if (controlTop.isBinaryOperator) {  //CSE rule 6
@@ -2038,6 +2066,7 @@ void processCSEMachine() {
         }
         controlTop.isTau = false;
         controlTop.isTuple = true;
+        controlTop.defaultLabel = "TupleOfSize=" + std::to_string(controlTop.numberOfElementsInTauTuple);
         cseMachineStack.push(controlTop);
     }
 }
@@ -2109,7 +2138,7 @@ void printControlStructures() {
             } else if (controlStructureToken.isUnaryOperator || controlStructureToken.isBinaryOperator) {
                 cout << controlStructureToken.operatorStringValue << " ";
             } else if (controlStructureToken.isTau) {
-                cout << "TAU ";
+                cout << "TAU[" + std::to_string(controlStructureToken.numberOfElementsInTauTuple) + "] ";
             } else if (controlStructureToken.isComma) {
                 cout << "COMMA ";
             } else if (controlStructureToken.isConditional) {
