@@ -69,7 +69,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
     std::vector<MachineNode> tupleElements; //can be either int/bool/string
     bool isComma;
     bool isEnvironmentMarker;
-    int environmentMarkerIndex;
+    int environmentMarkerIndex;  //for a lambda, it means the environment in which it was placed on the stack.
     bool isInt;
     int intValue;
     bool isConditional;
@@ -122,6 +122,8 @@ stack<MachineNode> cseMachineControl; //the Control stack of the CSE machine
 stack<MachineNode> cseMachineStack; //the "Stack" stack of values of the CSE machine
 
 EnvironmentNode *currentEnvironment = new EnvironmentNode;
+
+int environmentCounter = 0;
 
 /*
  * Check if the end of file has been reached.
@@ -1442,7 +1444,7 @@ void initializeCSEMachine() {
     currentEnvironment->environmentIndex = 0;
     currentEnvironment->parentEnvironment = NULL;
     currentEnvironment->previousEnvironment = NULL;
-    environments[0] = currentEnvironment;
+    environments[environmentCounter++] = currentEnvironment;
 
 //initialize control.
     //push the first token as the e0 environment variable
@@ -1474,7 +1476,7 @@ void processCSEMachine() {
 
     if (controlTop.isInt || controlTop.isString || controlTop.isBoolean) { //CSE rule 1 for ints, booleans and strings
         cseMachineStack.push(controlTop);
-    } else if (controlTop.isY) { 
+    } else if (controlTop.isY) {
         cseMachineStack.push(controlTop);
     } else if (controlTop.isName) { //CSE rule 1 for variables
         controlTop.isName = false;
@@ -1484,7 +1486,8 @@ void processCSEMachine() {
         int indexOfBoundVariable = 0;
 
         while (environmentWithVariableValue != NULL) {
-            cout<<"\n\nlooking for "<<controlTop.nameValue<<" in environment "<<environmentWithVariableValue->environmentIndex;
+            cout << "\n\nlooking for " << controlTop.nameValue << " in environment " <<
+            environmentWithVariableValue->environmentIndex;
             boundedValuesNode = environmentWithVariableValue->boundedValuesNode;
             for (int i = 0; i < boundedValuesNode.boundVariables.size(); i++) {
                 if (boundedValuesNode.boundVariables[i] == controlTop.nameValue) {
@@ -1720,9 +1723,9 @@ void processCSEMachine() {
             //add new lambda's environment variable to control
             MachineNode newEnvironmentVariableForCurrentLambda = MachineNode();
             newEnvironmentVariableForCurrentLambda.isEnvironmentMarker = true;
-            newEnvironmentVariableForCurrentLambda.environmentMarkerIndex = operatorNode.indexOfBodyOfLambda;
+            newEnvironmentVariableForCurrentLambda.environmentMarkerIndex = environmentCounter++;
             newEnvironmentVariableForCurrentLambda.defaultLabel =
-                    "e" + std::to_string(operatorNode.indexOfBodyOfLambda);
+                    "e" + std::to_string(newEnvironmentVariableForCurrentLambda.environmentMarkerIndex);
             cseMachineControl.push(newEnvironmentVariableForCurrentLambda);
             //cout << "\n Lambda3 \n";
 
@@ -1731,7 +1734,7 @@ void processCSEMachine() {
             newEnvironmentForCurrentLambda->parentEnvironment = environments[operatorNode.environmentMarkerIndex];
             newEnvironmentForCurrentLambda->previousEnvironment = currentEnvironment;
             currentEnvironment = newEnvironmentForCurrentLambda;
-            newEnvironmentForCurrentLambda->environmentIndex = operatorNode.indexOfBodyOfLambda;
+            newEnvironmentForCurrentLambda->environmentIndex = newEnvironmentVariableForCurrentLambda.environmentMarkerIndex;
             newEnvironmentForCurrentLambda->boundedValuesNode = MachineNode();
             newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables = operatorNode.boundVariables;
             environments[newEnvironmentForCurrentLambda->environmentIndex] = newEnvironmentForCurrentLambda;
@@ -1750,7 +1753,8 @@ void processCSEMachine() {
                 newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements = firstOperand.tupleElements;
             }
 
-            cout << "\n\nNew environment created, bound variables are:\n";
+            cout << "\n\nNew environment[" + std::to_string(newEnvironmentForCurrentLambda->environmentIndex) + "] created with parent environment[" +
+                    std::to_string(operatorNode.environmentMarkerIndex) + "], bound variables are:\n";
             for (int i = 0; i < newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables.size(); i++) {
                 cout << "\n" << newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables[i] << "= " <<
                 newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements[i].defaultLabel <<
