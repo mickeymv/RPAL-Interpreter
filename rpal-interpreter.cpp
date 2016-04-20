@@ -99,6 +99,7 @@ struct MachineNode { // Node abstraction for the CSE machine for both the contro
 };
 
 struct EnvironmentNode { //Node abstraction for an environment marker in the CSE machine
+    EnvironmentNode *parentEnvironment;
     EnvironmentNode *previousEnvironment;
     MachineNode boundedValuesNode;
     //the bounded values node will have the bounded variable mappings from the boundedVariables string vector to the tupleElements MachineNode vector.
@@ -1429,6 +1430,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
 void initializeCSEMachine() {
     //initialize environment with the primitive environment (PE / e0)
     currentEnvironment->environmentIndex = 0;
+    currentEnvironment->parentEnvironment = NULL;
     currentEnvironment->previousEnvironment = NULL;
     environments[0] = currentEnvironment;
 
@@ -1470,6 +1472,7 @@ void processCSEMachine() {
         int indexOfBoundVariable = 0;
 
         while (environmentWithVariableValue != NULL) {
+            cout<<"\n\nlooking for "<<controlTop.nameValue<<" in environment "<<environmentWithVariableValue->environmentIndex;
             boundedValuesNode = environmentWithVariableValue->boundedValuesNode;
             for (int i = 0; i < boundedValuesNode.boundVariables.size(); i++) {
                 if (boundedValuesNode.boundVariables[i] == controlTop.nameValue) {
@@ -1481,7 +1484,7 @@ void processCSEMachine() {
             if (variableValueFound) {
                 break;
             } else {
-                environmentWithVariableValue = environmentWithVariableValue->previousEnvironment;
+                environmentWithVariableValue = environmentWithVariableValue->parentEnvironment;
             }
         }
 
@@ -1523,6 +1526,7 @@ void processCSEMachine() {
                 exit(0);
             }
         }
+        currentEnvironment = environments[controlTop.environmentMarkerIndex]->previousEnvironment;
     } else if (controlTop.isLambda) {  //CSE rule 2
         controlTop.environmentMarkerIndex = currentEnvironment->environmentIndex; //index of environment in which this lambda holds
         cseMachineStack.push(controlTop);
@@ -1712,7 +1716,8 @@ void processCSEMachine() {
 
             //update currentEnvironment
             EnvironmentNode *newEnvironmentForCurrentLambda = new EnvironmentNode();
-            newEnvironmentForCurrentLambda->previousEnvironment = environments[operatorNode.environmentMarkerIndex];
+            newEnvironmentForCurrentLambda->parentEnvironment = environments[operatorNode.environmentMarkerIndex];
+            newEnvironmentForCurrentLambda->previousEnvironment = currentEnvironment;
             currentEnvironment = newEnvironmentForCurrentLambda;
             newEnvironmentForCurrentLambda->environmentIndex = operatorNode.indexOfBodyOfLambda;
             newEnvironmentForCurrentLambda->boundedValuesNode = MachineNode();
