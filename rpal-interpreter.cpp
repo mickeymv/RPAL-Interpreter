@@ -928,6 +928,7 @@ void convertInfixOperator(Node *infixOperatorNode) {
     Node *leftLeftOperatorChild = new Node;
     leftLeftOperatorChild->label = infixOperatorNode->firstKid->nextSibling->label;
     leftLeftOperatorChild->nextSibling = infixOperatorNode->firstKid; //E1
+    leftLeftOperatorChild->firstKid = NULL;
     leftGammaChild->label = GAMMA_STD_LABEL;
     leftGammaChild->firstKid = leftLeftOperatorChild;
     leftGammaChild->nextSibling = infixOperatorNode->firstKid->nextSibling->nextSibling; //E2
