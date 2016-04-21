@@ -1027,8 +1027,8 @@ void convertAndExpression(Node *andHeaderNode) {
 }
 
 void convertLetExpression(Node *letNode) {
-    cout << "\nInside convertLetExpression conversion!\nletNode ast form before standardizing is:\n";
-    recursivelyPrintTreeNode(letNode, "");
+//    cout << "\nInside convertLetExpression conversion!\nletNode ast form before standardizing is:\n";
+//    recursivelyPrintTreeNode(letNode, "");
     letNode->label = GAMMA_STD_LABEL;
 
     letNode->firstKid->label = LAMBDA_STD_LABEL;
@@ -1041,14 +1041,14 @@ void convertLetExpression(Node *letNode) {
     letNode->firstKid->nextSibling = eNode;
     letNode->firstKid->firstKid->nextSibling = pNode;
 
-    cout << "\nInside convertLetExpression conversion!\nletNode ast form after standardizing is:\n";
-    recursivelyPrintTreeNode(letNode, "");
+//    cout << "\nInside convertLetExpression conversion!\nletNode ast form after standardizing is:\n";
+//    recursivelyPrintTreeNode(letNode, "");
 }
 
 void convertRecExpression(Node *recNode) {
 //    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
-    cout << "\nInside convertRecExpression conversion!\nrecNode ast form before standardizing is:\n";
-    recursivelyPrintTreeNode(recNode, "");
+//    cout << "\nInside convertRecExpression conversion!\nrecNode ast form before standardizing is:\n";
+//    recursivelyPrintTreeNode(recNode, "");
 //    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
 //
 //    if(recNode->nextSibling != NULL) {
@@ -1088,8 +1088,8 @@ void convertRecExpression(Node *recNode) {
     recNode->firstKid->nextSibling = rightGammaChild;
 
 //    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
-    cout << "\nInside convertRecExpression conversion!\nrecNode ast form after standardizing is:\n";
-    recursivelyPrintTreeNode(recNode, "");
+//    cout << "\nInside convertRecExpression conversion!\nrecNode ast form after standardizing is:\n";
+//    recursivelyPrintTreeNode(recNode, "");
 //    cout<< "\nThe recNode label is: "<<recNode->label<<"\n";
 
 }
@@ -1161,30 +1161,30 @@ void recursivelyStandardizeTree(Node *node) {
         if (node->firstKid->label == ",") { //lambda expression with a tuple of variables
             //Do not standardize lambda with a tuple of variables (optimizations for the CISE machine)
         } else {    //lambda expression with a list(?) of variable(s)
-            cout << "\nGoing to convertLambdaExpression\n";
+//            cout << "\nGoing to convertLambdaExpression\n";
             convertLambdaExpression(node);
         }
     } else if (node->label == FCN_FORM_LABEL) {    //convert function_form to standardized form
-        cout << "\nGoing to convertFunctionForm\n";
+//        cout << "\nGoing to convertFunctionForm\n";
         convertFunctionForm(node);
     } else if (node->label == "@") {    //convert infix operator to standardized form
-        cout << "\nGoing to convertInfixOperator\n";
+//        cout << "\nGoing to convertInfixOperator\n";
         convertInfixOperator(node);
     } else if (node->label == "and") {
-        cout << "\nGoing to convertAndExpression\n";
+//        cout << "\nGoing to convertAndExpression\n";
         convertAndExpression(node);
     } else if (node->label == "within") {
-        cout << "\nGoing to convertWithinExpression\n";
+//        cout << "\nGoing to convertWithinExpression\n";
         convertWithinExpression(node);
     } else if (node->label == "rec") {
-        cout << "\nGoing to convertRecExpression for nodeLabel= " << node->label << "\n";
+//        cout << "\nGoing to convertRecExpression for nodeLabel= " << node->label << "\n";
         convertRecExpression(node);
-        cout << "\nAfter convertRecExpression for nodeLabel= " << node->label << "\n";
+//        cout << "\nAfter convertRecExpression for nodeLabel= " << node->label << "\n";
     } else if (node->label == "let") {
-        cout << "\nGoing to convertLetExpression\n";
+//        cout << "\nGoing to convertLetExpression\n";
         convertLetExpression(node);
     } else if (node->label == "where") {
-        cout << "\nGoing to convertWhereExpression\n";
+//        cout << "\nGoing to convertWhereExpression\n";
         convertWhereExpression(node);
     }
 }
@@ -1208,8 +1208,8 @@ void printTree() {
  */
 void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure, int controlStructureIndex,
                             bool processKid, bool processSiblings) {
-    cout << "\n in recursivelyFlattenTree for node: " << treeNode->label << ", controlStructure: " <<
-    controlStructureIndex << " and size=" << controlStructure->size();
+//    cout << "\n in recursivelyFlattenTree for node: " << treeNode->label << ", controlStructure: " <<
+//    controlStructureIndex << " and size=" << controlStructure->size();
     MachineNode controlStructureNode = MachineNode();
 
     controlStructureNode.defaultLabel = treeNode->label;
@@ -1217,14 +1217,14 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.isGamma = true;
         controlStructureNode.defaultLabel = "gamma";
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's a gamma!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's a gamma!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "Y") {
         controlStructureNode.isY = true;
         controlStructureNode.defaultLabel = "Y";
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's a Y!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's a Y!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 6, "<STR:'") == 0) {
         controlStructureNode.isString = true;
         controlStructureNode.stringValue = treeNode->label.substr(6);
@@ -1233,8 +1233,8 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                                                                    2);
         controlStructureNode.defaultLabel = controlStructureNode.stringValue;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's a string!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's a string!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 4, "<ID:") == 0) {
         controlStructureNode.isName = true;
         controlStructureNode.nameValue = treeNode->label.substr(4);
@@ -1243,8 +1243,8 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                                                                1);
         controlStructureNode.defaultLabel = controlStructureNode.nameValue;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's an identifier!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's an identifier!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label.compare(0, 5, "<INT:") == 0) {
         controlStructureNode.isInt = true;
         string intString = treeNode->label.substr(5);
@@ -1256,34 +1256,34 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructureNode.intValue = std::stoi(intString);
         controlStructureNode.defaultLabel = intString;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's an integer!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's an integer!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "<true>" || treeNode->label == "<false>") {
         controlStructureNode.isBoolean = true;
         controlStructureNode.defaultLabel = treeNode->label == "<true>" ? "true" : "false";
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's a truthValue!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's a truthValue!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "<nil>") {
         controlStructureNode.isTuple = true;
         controlStructureNode.defaultLabel = "nil";
         controlStructureNode.numberOfElementsInTauTuple = 0;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's nil!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's nil!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "<dummy>") {
         controlStructureNode.isDummy = true;
         controlStructureNode.defaultLabel = "dummy";
         controlStructure->push_back(controlStructureNode);
-        cout << "\n it's nil!";
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n it's nil!";
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == LAMBDA_STD_LABEL || treeNode->label == "lambda") {
-        cout << "\n it's a lambda!";
+//        cout << "\n it's a lambda!";
         processKid = false;
         controlStructureNode.isLambda = true;
         int numberOfBoundVariables = 0;
         if (treeNode->firstKid->label == ",") {
-            cout << "\nIt's a comma node! bound variables!\n";
+//            cout << "\nIt's a comma node! bound variables!\n";
             Node *boundVariableNode = treeNode->firstKid->firstKid;
             while (boundVariableNode != NULL) {
                 numberOfBoundVariables++;
@@ -1295,7 +1295,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
             }
         } else { //only one bound variable, which is first child (leftChild)
             numberOfBoundVariables++;
-            cout << "\nthe bound variable for this lambda= " << treeNode->firstKid->label << "\n";
+//            cout << "\nthe bound variable for this lambda= " << treeNode->firstKid->label << "\n";
             string variable = treeNode->firstKid->label.substr(
                     4);  //bound variables will always start with <ID: and end with >
             variable = variable.substr(0, variable.length() - 1);
@@ -1311,12 +1311,12 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 "Lambda with bound variables(" + boundVariables + ") and body(" +
                 std::to_string(controlStructureNode.indexOfBodyOfLambda) + ")";
         controlStructure->push_back(controlStructureNode);
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
         list<MachineNode> *controlStructureOfLambda = new list<MachineNode>;
         recursivelyFlattenTree(treeNode->firstKid->nextSibling, controlStructureOfLambda,
                                controlStructureNode.indexOfBodyOfLambda, true, true);
     } else if (treeNode->label == "->") {
-        cout << "\n\n ****** Handle CONDITIONAL! ****** \n\n";
+//        cout << "\n\n ****** Handle CONDITIONAL! ****** \n\n";
         processKid = false;
         MachineNode trueNode = MachineNode();
         MachineNode falseNode = MachineNode();
@@ -1341,13 +1341,13 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
         controlStructure->push_back(betaNode);
         recursivelyFlattenTree(treeNode->firstKid, controlStructure,
                                controlStructureIndex, true, false);
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "not" || treeNode->label == "neg") { //convert unary operators to standardized form
-        cout << "\n it's a " << treeNode->label;
+//        cout << "\n it's a " << treeNode->label;
         controlStructureNode.isUnaryOperator = true;
         controlStructureNode.operatorStringValue = treeNode->label;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "aug" || treeNode->label == "or" || treeNode->label == "&" ||
                treeNode->label == "gr" ||
                treeNode->label == "ge" || treeNode->label == "ls" || treeNode->label == "le" ||
@@ -1355,13 +1355,13 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                treeNode->label == "ne" || treeNode->label == "+" || treeNode->label == "-" ||
                treeNode->label == "*" ||
                treeNode->label == "/" || treeNode->label == "**") {
-        cout << "\n it's a " << treeNode->label;
+//        cout << "\n it's a " << treeNode->label;
         controlStructureNode.isBinaryOperator = true;
         controlStructureNode.operatorStringValue = treeNode->label;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "tau") {
-        cout << "\n\n ****** Handle TAU! ****** \n\n";
+//        cout << "\n\n ****** Handle TAU! ****** \n\n";
         processKid = false;
         controlStructureNode.isTau = true;
         int numberOfElementsInTuple = 0;
@@ -1384,9 +1384,9 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                                                                    tupleElementNode.stringValue.length() -
                                                                                    2);
                 tupleElementNode.defaultLabel = tupleElementNode.stringValue;
-                cout << "\n it's a string!";
+//                cout << "\n it's a string!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
             } else if (tauElementNode->label.compare(0, 4, "<ID:") == 0) {
                 tupleElementNode.isName = true;
@@ -1395,9 +1395,9 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                                                                tupleElementNode.nameValue.length() -
                                                                                1);
                 tupleElementNode.defaultLabel = tupleElementNode.nameValue;
-                cout << "\n it's an identifier!";
+//                cout << "\n it's an identifier!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
             } else if (tauElementNode->label.compare(0, 5, "<INT:") == 0) {
                 tupleElementNode.isInt = true;
@@ -1407,23 +1407,23 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                              1);
                 tupleElementNode.intValue = std::stoi(intString);
                 tupleElementNode.defaultLabel = intString;
-                cout << "\n it's an integer!";
+//                cout << "\n it's an integer!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
             } else if (tauElementNode->label == "<true>" || tauElementNode->label == "<false>") {
                 tupleElementNode.isBoolean = true;
                 tupleElementNode.defaultLabel = tauElementNode->label == "<true>" ? "true" : "false";
-                cout << "\n it's a truthValue!";
+//                cout << "\n it's a truthValue!";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
             } else if (tauElementNode->label == "gamma" || tauElementNode->label == GAMMA_STD_LABEL) {
                 tupleElementNode.isGamma = true;
-                cout << "\n it's a gamma!";
+//                cout << "\n it's a gamma!";
                 tupleElementNode.defaultLabel = "gamma";
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
                 cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
@@ -1437,32 +1437,32 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                        tauElementNode->label == "ne" || tauElementNode->label == "+" || tauElementNode->label == "-" ||
                        tauElementNode->label == "*" ||
                        tauElementNode->label == "/" || tauElementNode->label == "**") {
-                cout << "\n it's a " << tauElementNode->label;
+//                cout << "\n it's a " << tauElementNode->label;
                 tupleElementNode.isBinaryOperator = true;
                 tupleElementNode.operatorStringValue = tauElementNode->label;
                 controlStructure->push_back(tupleElementNode);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
-                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
+//                cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
             } else {
-                cout << "\n it's a " << tauElementNode->label;
+//                cout << "\n it's a " << tauElementNode->label;
                 recursivelyFlattenTree(tauElementNode, controlStructure, controlStructureIndex, true, false);
             }
             tauElementNode = tauElementNode->nextSibling;
         } while (tauElementNode != NULL);
 
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == ",") {
-        cout << "\n\n ****** Handle CommaNode! ****** \n\n";
+//        cout << "\n\n ****** Handle CommaNode! ****** \n\n";
         controlStructureNode.isComma = true;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     } else if (treeNode->label == "true" || treeNode->label == "false") {
         controlStructureNode.isBoolean = true;
         controlStructure->push_back(controlStructureNode);
-        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
+//        cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " << controlStructure->size();
     }
     controlStructures[controlStructureIndex] = *controlStructure;
 
@@ -1512,7 +1512,7 @@ void processCSEMachine() {
     MachineNode controlTop = cseMachineControl.top();
     cseMachineControl.pop();
 
-    cout << "\n\n Control's top is: " << controlTop.defaultLabel;
+//    cout << "\n\n Control's top is: " << controlTop.defaultLabel;
 
     if (controlTop.isInt || controlTop.isString || controlTop.isBoolean ||
         controlTop.isDummy) { //CSE rule 1 for ints, booleans, dummy and strings
@@ -1529,8 +1529,8 @@ void processCSEMachine() {
         int indexOfBoundVariable = 0;
 
         while (environmentWithVariableValue != NULL) {
-            cout << "\n\nlooking for " << controlTop.nameValue << " in environment " <<
-            environmentWithVariableValue->environmentIndex;
+//            cout << "\n\nlooking for " << controlTop.nameValue << " in environment " <<
+//            environmentWithVariableValue->environmentIndex;
             boundedValuesNode = environmentWithVariableValue->boundedValuesNode;
             for (int i = 0; i < boundedValuesNode.boundVariables.size(); i++) {
                 if (boundedValuesNode.boundVariables[i] == controlTop.nameValue) {
@@ -1562,9 +1562,9 @@ void processCSEMachine() {
                 exit(0);
             }
         } else {
-            cout << "\n\n Value of " << controlTop.nameValue << " is= ";
+//            cout << "\n\n Value of " << controlTop.nameValue << " is= ";
             controlTop = environmentWithVariableValue->boundedValuesNode.tupleElements[indexOfBoundVariable];
-            cout << controlTop.defaultLabel << "\n\n";
+//            cout << controlTop.defaultLabel << "\n\n";
             cseMachineStack.push(controlTop);
         }
     } else if (controlTop.isEnvironmentMarker) { //CSE rule 5
@@ -1820,14 +1820,14 @@ void processCSEMachine() {
                 newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements = firstOperand.tupleElements;
             }
 
-            cout << "\n\nNew environment[" + std::to_string(newEnvironmentForCurrentLambda->environmentIndex) +
-                    "] created with parent environment[" +
-                    std::to_string(operatorNode.environmentMarkerIndex) + "], bound variables are:\n";
-            for (int i = 0; i < newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables.size(); i++) {
-                cout << "\n" << newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables[i] << "= " <<
-                newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements[i].defaultLabel <<
-                "\n\n";
-            }
+//            cout << "\n\nNew environment[" + std::to_string(newEnvironmentForCurrentLambda->environmentIndex) +
+//                    "] created with parent environment[" +
+//                    std::to_string(operatorNode.environmentMarkerIndex) + "], bound variables are:\n";
+//            for (int i = 0; i < newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables.size(); i++) {
+//                cout << "\n" << newEnvironmentForCurrentLambda->boundedValuesNode.boundVariables[i] << "= " <<
+//                newEnvironmentForCurrentLambda->boundedValuesNode.tupleElements[i].defaultLabel <<
+//                "\n\n";
+//            }
 
             //cout << "\n Lambda4 \n";
 
@@ -1861,7 +1861,6 @@ void processCSEMachine() {
             cseMachineControl.push(gammaNode);
         } else if (operatorNode.isBuiltInFunction) {
             if (operatorNode.defaultLabel == "Print") {
-                cout << "\n\n";
                 if (firstOperand.isBoolean) {
                     cout << firstOperand.defaultLabel;
                 } else if (firstOperand.isInt) {
@@ -2212,7 +2211,7 @@ void runCSEMachine() {
  * with a pre-order traversal.
  */
 void flattenStandardizedTree() {
-    cout << "\n\nGoing to flattenStandardizedTree now!\n\n";
+//    cout << "\n\nGoing to flattenStandardizedTree now!\n\n";
     if (!trees.empty()) {
         Node *treeRoot = trees.top();
         //cout << "\n\nBefore pointer declare\n\n";
@@ -2229,7 +2228,7 @@ void flattenStandardizedTree() {
  * in a post-order fashion.
  */
 void convertASTToStandardizedTree() {
-    cout << "\n\nGoing to standardize the tree now!\n\n";
+//    cout << "\n\nGoing to standardize the tree now!\n\n";
     if (!trees.empty()) {
         //cout << "\n\nThis is supposed to be the only tree below!\n";
         Node *treeRootOfAST = trees.top();
@@ -2367,20 +2366,21 @@ int main(int argc, char *argv[]) {
                 if (checkIfEOF(the_file)) {
 //                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
 //                    exit(1);
-                    cout << "\nThe AST is:\n";
-                    printTree(); //print the AST
+//                    cout << "\nThe AST is:\n";
+//                    printTree(); //print the AST
                     convertASTToStandardizedTree();
-                    cout << "\nThe standardized tree (ST) is:\n";
-                    printTree(); //print the standardized tree
-                    cout << "\nGoing to flatten the tree:\n";
+//                    cout << "\nThe standardized tree (ST) is:\n";
+//                    printTree(); //print the standardized tree
+//                    cout << "\nGoing to flatten the tree:\n";
                     flattenStandardizedTree();
-                    cout << "\nThe control structures are:\n";
-                    printControlStructures();
-                    cout << "\nGoing to run the CSE machine now!\n";
+//                    cout << "\nThe control structures are:\n";
+//                    printControlStructures();
+//                    cout << "\nGoing to run the CSE machine now!\n";
                     runCSEMachine();
-                    cout << "\n\nThe output of the RPAL program is:\n\n";
-                    int output = cseMachineStack.top().intValue;
-                    cout << output << "\n\n\n";
+//                    cout << "\n\nThe output of the RPAL program is:\n\n";
+//                    int output = cseMachineStack.top().intValue;
+//                    cout << output << "\n\n\n";
+                    cout<<"\n";
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
