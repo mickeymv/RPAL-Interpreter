@@ -118,7 +118,7 @@ stack<Node *> trees; //Stack of trees used to manipulate the AST/ST generation.
 std::vector<std::list<MachineNode> > controlStructures(150); //each controlStructure would be a list of machineNodes
 int numberOfControlStructures = 1;
 
-EnvironmentNode *environments[150];
+EnvironmentNode *environments[1200];
 
 stack<MachineNode> cseMachineControl; //the Control stack of the CSE machine
 stack<MachineNode> cseMachineStack; //the "Stack" stack of values of the CSE machine
