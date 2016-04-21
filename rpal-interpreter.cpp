@@ -1910,6 +1910,14 @@ void processCSEMachine() {
                     result.defaultLabel = std::to_string(result.intValue);
                     cseMachineStack.push(result);
                 }
+            } else if (operatorNode.defaultLabel == "Stem") {
+                result.isString = true;
+                result.stringValue = firstOperand.stringValue[0];
+                cseMachineStack.push(result);
+            } else if (operatorNode.defaultLabel == "Stern") {
+                result.isString = true;
+                result.stringValue = firstOperand.stringValue.substr(1);
+                cseMachineStack.push(result);
             }
             else {
                 cout <<
