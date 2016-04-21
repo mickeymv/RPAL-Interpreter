@@ -115,7 +115,7 @@ struct EnvironmentNode { //Node abstraction for an environment marker in the CSE
 
 stack<Node *> trees; //Stack of trees used to manipulate the AST/ST generation.
 
-std::vector<std::list<MachineNode> > controlStructures(50); //each controlStructure would be a list of machineNodes
+std::vector<std::list<MachineNode> > controlStructures(150); //each controlStructure would be a list of machineNodes
 int numberOfControlStructures = 1;
 
 EnvironmentNode *environments[150];
@@ -1939,6 +1939,10 @@ void processCSEMachine() {
                 result.isString = true;
                 result.defaultLabel = std::to_string(firstOperand.intValue);
                 result.stringValue = std::to_string(firstOperand.intValue);
+                cseMachineStack.push(result);
+            } else if (operatorNode.defaultLabel == "Istruthvalue") {
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.isBoolean ? "true" : "false";
                 cseMachineStack.push(result);
             }
             else {
