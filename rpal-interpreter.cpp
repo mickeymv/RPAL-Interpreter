@@ -1927,6 +1927,10 @@ void processCSEMachine() {
                 result.isBoolean = true;
                 result.defaultLabel = firstOperand.isTuple ? "true" : "false";
                 cseMachineStack.push(result);
+            } else if (operatorNode.defaultLabel == "Isinteger") {
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.isInt ? "true" : "false";
+                cseMachineStack.push(result);
             }
             else {
                 cout <<
