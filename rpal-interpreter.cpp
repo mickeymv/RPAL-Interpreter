@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 using namespace std;
 
@@ -1253,7 +1255,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                                      intString.length() -
                                      1);
         //cout<<"\n intString= "<<intString;
-        controlStructureNode.intValue = std::stoi(intString);
+        controlStructureNode.intValue = atoi(intString.c_str());
         controlStructureNode.defaultLabel = intString;
         controlStructure->push_back(controlStructureNode);
 //        cout << "\n it's an integer!";
@@ -1405,7 +1407,7 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 intString = intString.substr(0,
                                              intString.length() -
                                              1);
-                tupleElementNode.intValue = std::stoi(intString);
+                tupleElementNode.intValue = atoi(intString.c_str());
                 tupleElementNode.defaultLabel = intString;
 //                cout << "\n it's an integer!";
                 controlStructure->push_back(tupleElementNode);
@@ -1932,7 +1934,7 @@ void processCSEMachine() {
                 cseMachineStack.push(result);
             } else if (operatorNode.defaultLabel == "ItoS") {
                 if (!firstOperand.isInt) {
-                    cout<<"ERROR! operand to ItoS is not Int! DIE NOW!";
+                    cout << "ERROR! operand to ItoS is not Int! DIE NOW!";
                     exit(0);
                 }
                 result.isString = true;
@@ -2380,7 +2382,7 @@ int main(int argc, char *argv[]) {
 //                    cout << "\n\nThe output of the RPAL program is:\n\n";
 //                    int output = cseMachineStack.top().intValue;
 //                    cout << output << "\n\n\n";
-                    cout<<"\n";
+                    cout << "\n";
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
