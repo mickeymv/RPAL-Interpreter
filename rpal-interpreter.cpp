@@ -1122,6 +1122,7 @@ void convertWithinExpression(Node *withinNode) {
     Node *rightGammaChild = new Node;
     Node *rightLeftLambdaChild = new Node;
     rightGammaChild->label = GAMMA_STD_LABEL;
+    rightGammaChild->nextSibling = NULL;
     rightLeftLambdaChild->label = LAMBDA_STD_LABEL;
 
     rightGammaChild->firstKid = rightLeftLambdaChild;
@@ -1917,6 +1918,10 @@ void processCSEMachine() {
             } else if (operatorNode.defaultLabel == "Stern") {
                 result.isString = true;
                 result.stringValue = firstOperand.stringValue.substr(1);
+                cseMachineStack.push(result);
+            } else if (operatorNode.defaultLabel == "Isstring") {
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.isString ? "true" : "false";
                 cseMachineStack.push(result);
             }
             else {
