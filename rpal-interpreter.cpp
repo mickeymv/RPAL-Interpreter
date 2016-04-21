@@ -833,7 +833,7 @@ void recursivelyPrintTree(Node *node, string indentDots) {
     cout << indentDots + node->label << "\n";
     if (node->firstKid != NULL) {
         //cout<<"\nPrinting firstKid tree for: "<<node->label<<"\n";
-        recursivelyPrintTree(node->firstKid, indentDots + "(-.#.-)");
+        recursivelyPrintTree(node->firstKid, indentDots + ".");
     }
     if (node->nextSibling != NULL) {
         //cout<<"\nPrinting nextSibling tree for: "<<node->label<<"\n";
