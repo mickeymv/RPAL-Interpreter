@@ -1923,6 +1923,10 @@ void processCSEMachine() {
                 result.isBoolean = true;
                 result.defaultLabel = firstOperand.isString ? "true" : "false";
                 cseMachineStack.push(result);
+            } else if (operatorNode.defaultLabel == "Istuple") {
+                result.isBoolean = true;
+                result.defaultLabel = firstOperand.isTuple ? "true" : "false";
+                cseMachineStack.push(result);
             }
             else {
                 cout <<
