@@ -1722,7 +1722,8 @@ void processCSEMachine() {
                     }
                 } else if (operatorNode.operatorStringValue == "eq") {
                     if (!((!firstOperand.isInt || !secondOperand.isInt) ||
-                          (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
+                          (!firstOperand.isBoolean || !secondOperand.isBoolean) ||
+                          (!firstOperand.isString || !secondOperand.isString))) {
                         cout << "\n operands not of same type for 'eq' operation! exiting! \n";
                         exit(0);
                     } else {
@@ -1733,11 +1734,15 @@ void processCSEMachine() {
                         } else if (firstOperand.isBoolean) {
                             result.defaultLabel =
                                     firstOperand.defaultLabel == secondOperand.defaultLabel ? "true" : "false";
+                        } else if (firstOperand.isString) {
+                            result.defaultLabel =
+                                    firstOperand.stringValue == secondOperand.stringValue ? "true" : "false";
                         }
                     }
                 } else if (operatorNode.operatorStringValue == "ne") {
                     if (!((!firstOperand.isInt || !secondOperand.isInt) ||
-                          (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
+                          (!firstOperand.isBoolean || !secondOperand.isBoolean) ||
+                          (!firstOperand.isString || !secondOperand.isString))) {
                         cout << "\n operands not of same type for 'ne' operation! exiting! \n";
                         exit(0);
                     } else {
@@ -1748,6 +1753,9 @@ void processCSEMachine() {
                         } else if (firstOperand.isBoolean) {
                             result.defaultLabel =
                                     firstOperand.defaultLabel != secondOperand.defaultLabel ? "true" : "false";
+                        } else if (firstOperand.isString) {
+                            result.defaultLabel =
+                                    firstOperand.stringValue != secondOperand.stringValue ? "true" : "false";
                         }
                     }
                 } else if (operatorNode.operatorStringValue == "or") {
@@ -2018,7 +2026,8 @@ void processCSEMachine() {
             }
         } else if (operatorNode.operatorStringValue == "eq") {
             if (!((!firstOperand.isInt || !secondOperand.isInt) ||
-                  (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
+                  (!firstOperand.isBoolean || !secondOperand.isBoolean) ||
+                  (!firstOperand.isString || !secondOperand.isString))) {
                 cout << "\n operands not of same type for 'eq' operation! exiting! \n";
                 exit(0);
             } else {
@@ -2029,11 +2038,15 @@ void processCSEMachine() {
                 } else if (firstOperand.isBoolean) {
                     result.defaultLabel =
                             firstOperand.defaultLabel == secondOperand.defaultLabel ? "true" : "false";
+                } else if (firstOperand.isString) {
+                    result.defaultLabel =
+                            firstOperand.stringValue == secondOperand.stringValue ? "true" : "false";
                 }
             }
         } else if (operatorNode.operatorStringValue == "ne") {
             if (!((!firstOperand.isInt || !secondOperand.isInt) ||
-                  (!firstOperand.isBoolean || !secondOperand.isBoolean))) {
+                  (!firstOperand.isBoolean || !secondOperand.isBoolean) ||
+                  (!firstOperand.isString || !secondOperand.isString))) {
                 cout << "\n operands not of same type for 'ne' operation! exiting! \n";
                 exit(0);
             } else {
@@ -2044,6 +2057,9 @@ void processCSEMachine() {
                 } else if (firstOperand.isBoolean) {
                     result.defaultLabel =
                             firstOperand.defaultLabel != secondOperand.defaultLabel ? "true" : "false";
+                } else if (firstOperand.isString) {
+                    result.defaultLabel =
+                            firstOperand.stringValue != secondOperand.stringValue ? "true" : "false";
                 }
             }
         } else if (operatorNode.operatorStringValue == "or") {
