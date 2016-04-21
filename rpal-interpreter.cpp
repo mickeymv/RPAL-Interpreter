@@ -1445,6 +1445,9 @@ void recursivelyFlattenTree(Node *treeNode, list<MachineNode> *controlStructure,
                 recursivelyFlattenTree(tauElementNode->firstKid, controlStructure, controlStructureIndex, true, true);
                 cout << "\n size of controlStructure '" << controlStructureIndex << "' is= " <<
                 controlStructure->size();
+            } else if (tauElementNode->label == "tau") {
+                cout << "\n it's a " << tauElementNode->label;
+                recursivelyFlattenTree(tauElementNode, controlStructure, controlStructureIndex, true, false);
             }
             tauElementNode = tauElementNode->nextSibling;
         } while (tauElementNode != NULL);
