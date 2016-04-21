@@ -1552,7 +1552,7 @@ void processCSEMachine() {
                 controlTop.nameValue == "Istuple" || controlTop.nameValue == "Isinteger" ||
                 controlTop.nameValue == "Istruthvalue" || controlTop.nameValue == "Isstring" ||
                 controlTop.nameValue == "Isfunction" || controlTop.nameValue == "Isdummy" ||
-                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" || controlTop.nameValue == "Order") {
+                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" || controlTop.nameValue == "Order" || controlTop.nameValue == "ItoS") {
                 controlTop.isBuiltInFunction = true;
                 controlTop.defaultLabel = controlTop.nameValue;
                 cseMachineStack.push(controlTop);
@@ -1930,6 +1930,15 @@ void processCSEMachine() {
             } else if (operatorNode.defaultLabel == "Isinteger") {
                 result.isBoolean = true;
                 result.defaultLabel = firstOperand.isInt ? "true" : "false";
+                cseMachineStack.push(result);
+            } else if (operatorNode.defaultLabel == "ItoS") {
+                if (!firstOperand.isInt) {
+                    cout<<"ERROR! operand to ItoS is not Int! DIE NOW!";
+                    exit(0);
+                }
+                result.isString = true;
+                result.defaultLabel = std::to_string(firstOperand.intValue);
+                result.stringValue = std::to_string(firstOperand.intValue);
                 cseMachineStack.push(result);
             }
             else {
