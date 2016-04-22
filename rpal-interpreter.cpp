@@ -1910,6 +1910,9 @@ void processCSEMachine() {
                         }
                         cout << ")";
                     }
+                } else if (firstOperand.isLambda) {
+                    cout << "[lambda closure: " + firstOperand.boundVariables[0] + ": " +
+                            std::to_string(firstOperand.indexOfBodyOfLambda) + "]";
                 } else {
                     cout <<
                     "\n\n ERROR! I don't know how to PRINT the value on stack= " + firstOperand.defaultLabel + "\n\n";
