@@ -2312,6 +2312,26 @@ void readToken(ifstream &file, string token) {
     scan(file);
 }
 
+/*
+ * Run the tree standardizer and CSE machine
+ * on the standardized tree.
+ */
+void runAndShowOutput() {
+    convertASTToStandardizedTree();
+//                    cout << "\nThe standardized tree (ST) is:\n";
+//                    printTree(); //print the standardized tree
+//                    cout << "\nGoing to flatten the tree:\n";
+    flattenStandardizedTree();
+//                    cout << "\nThe control structures are:\n";
+//                    printControlStructures();
+//                    cout << "\nGoing to run the CSE machine now!\n";
+    runCSEMachine();
+//                    cout << "\n\nThe output of the RPAL program is:\n\n";
+//                    int output = cseMachineStack.top().intValue;
+//                    cout << output << "\n\n\n";
+    cout << "\n";
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc == 3) {
@@ -2329,14 +2349,33 @@ int main(int argc, char *argv[]) {
             else {
                 if (strcmp(argv[1], "-l") == 0) { //Print input? (//Listing of input?)
                     /* Optional switches: -l This produces a listing of the input. */
-                    cout << "\n\n";
                     char x;
                     // the_file.get ( x ) returns false if the end of the file
                     //  is reached or an error occurs
                     while (the_file.get(x))
                         cout << x;
                     // the_file is closed implicitly here
-                    cout << "\n\n";
+                    ifstream file(argv[2]);
+                    // Always check to see if file opening succeeded
+                    if (!file.is_open())
+                        cout << "\n\nCould not open file: '" << argv[2] << "'" << "\n\n";
+                    else {
+                        //Call ast generator
+                        //Call parser
+                        //cout << "\n\nShould lexically analyze by recursively descending!!\n\n";
+                        scan(file); //Prepare the first token by placing it within 'NT'
+                        E(file);    //Call the first non-terminal procedure to start parsing
+                        //cout << " " << NT;
+                        if (checkIfEOF(file)) {
+//                    cout << "\n\nEOF successfully reached after complete parsing! Will exit now!!\n\n";
+//                    exit(1);
+                            runAndShowOutput();
+                        } else {
+                            cout <<
+                            "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
+                            exit(0);
+                        }
+                    }
                 } else if (strcmp(argv[1], "-ast") == 0) {
                     /*
                      * Required switches: -ast This switch prints the abstract syntax tree, and nothing else.
@@ -2354,7 +2393,7 @@ int main(int argc, char *argv[]) {
 //                    exit(1);
                         //cout << "\n\nAST Tree should print!\n\n";
                         printTree();
-
+                        runAndShowOutput();
                     } else {
                         cout <<
                         "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
@@ -2390,19 +2429,7 @@ int main(int argc, char *argv[]) {
 //                    exit(1);
 //                    cout << "\nThe AST is:\n";
 //                    printTree(); //print the AST
-                    convertASTToStandardizedTree();
-//                    cout << "\nThe standardized tree (ST) is:\n";
-//                    printTree(); //print the standardized tree
-//                    cout << "\nGoing to flatten the tree:\n";
-                    flattenStandardizedTree();
-//                    cout << "\nThe control structures are:\n";
-//                    printControlStructures();
-//                    cout << "\nGoing to run the CSE machine now!\n";
-                    runCSEMachine();
-//                    cout << "\n\nThe output of the RPAL program is:\n\n";
-//                    int output = cseMachineStack.top().intValue;
-//                    cout << output << "\n\n\n";
-                    cout << "\n";
+                    runAndShowOutput();
                 } else {
                     cout << "\n\nERROR! EOF not reached but went through the complete grammar! Will exit now!!\n\n";
                     exit(0);
