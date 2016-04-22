@@ -1,0 +1,4 @@
+This is a list of known bugs in this version of my RPAL interpreter (p2).
+
+1.  let A = 1 in Print (+ A 1)
+    The wrong tree is built, instead of disallowing this syntactically.
