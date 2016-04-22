@@ -1507,6 +1507,24 @@ void initializeCSEMachine() {
 }
 
 /*
+ * Utility function which recognizes strings with escape sequences '\n' or '\t'
+ * and prints to the output with those utilized.
+ */
+void printString(std::string stringToPrint) {
+    for (size_t i = 0; i < stringToPrint.length(); i++) {
+        if (stringToPrint.at(i) == '\\' && stringToPrint.at(i + 1) == 'n') {
+            cout << "\n";
+            i++;
+        } else if (stringToPrint.at(i) == '\\' && stringToPrint.at(i + 1) == 't') {
+            cout << "\t";
+            i++;
+        } else {
+            cout << stringToPrint.at(i);
+        }
+    }
+}
+
+/*
  * process the CSE machine by checking the value of top of the
  * control stack and processing it properly.
  */
@@ -1554,7 +1572,8 @@ void processCSEMachine() {
                 controlTop.nameValue == "Istuple" || controlTop.nameValue == "Isinteger" ||
                 controlTop.nameValue == "Istruthvalue" || controlTop.nameValue == "Isstring" ||
                 controlTop.nameValue == "Isfunction" || controlTop.nameValue == "Isdummy" ||
-                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" || controlTop.nameValue == "Order" || controlTop.nameValue == "ItoS") {
+                controlTop.nameValue == "Stem" || controlTop.nameValue == "Stern" || controlTop.nameValue == "Order" ||
+                controlTop.nameValue == "ItoS") {
                 controlTop.isBuiltInFunction = true;
                 controlTop.defaultLabel = controlTop.nameValue;
                 cseMachineStack.push(controlTop);
@@ -1868,7 +1887,8 @@ void processCSEMachine() {
                 } else if (firstOperand.isInt) {
                     cout << firstOperand.intValue;
                 } else if (firstOperand.isString) {
-                    cout << firstOperand.stringValue;
+                    printString(firstOperand.stringValue);
+
                 } else if (firstOperand.isDummy) {
                     //Do nothing
                 } else if (firstOperand.isTuple) {
@@ -1882,7 +1902,7 @@ void processCSEMachine() {
                             } else if (firstOperand.tupleElements[i].isInt) {
                                 cout << firstOperand.tupleElements[i].intValue;
                             } else if (firstOperand.tupleElements[i].isString) {
-                                cout << firstOperand.tupleElements[i].stringValue;
+                                printString(firstOperand.stringValue);
                             }
                             if (i + 1 != firstOperand.tupleElements.size()) {
                                 cout << ", ";
