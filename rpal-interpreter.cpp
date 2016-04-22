@@ -1902,7 +1902,7 @@ void processCSEMachine() {
                             } else if (firstOperand.tupleElements[i].isInt) {
                                 cout << firstOperand.tupleElements[i].intValue;
                             } else if (firstOperand.tupleElements[i].isString) {
-                                printString(firstOperand.stringValue);
+                                printString(firstOperand.tupleElements[i].stringValue);
                             }
                             if (i + 1 != firstOperand.tupleElements.size()) {
                                 cout << ", ";
